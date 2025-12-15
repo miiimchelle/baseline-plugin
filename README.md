@@ -1,39 +1,103 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# Baseline
 
-  https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+**Baseline** is a lightweight design decision journal for Figma.
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+It helps designers capture the *why* behind decisions, while context is still fresh, so they don’t have to keep re-explaining, re-justifying, or re-litigating work later.
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+> Align on why, not just what.
 
-  https://nodejs.org/en/download/
+---
 
-Next, install TypeScript using the command:
+## Why Baseline exists
 
-  npm install -g typescript
+Baseline exists because I have ADHD, a busy brain, and a strong grasp on reality.
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+In fast-moving teams, design decisions have a funny way of being “remembered differently” over time. Context gets lost. Rationales fade. Stakeholders revisit choices as if they were never discussed. And designers are left defending decisions they already explained (sometimes multiple times).
+
+Baseline is a calm, low-friction way to capture design rationale at the moment it’s made, so future conversations are grounded in facts, not vibes.
+
+It’s not about being defensive.  
+It’s about preserving context.
+
+---
+
+## What Baseline is
+
+- A **journal**, not a documentation system
+- A place to capture **decisions, assumptions, trade-offs, feedback outcomes, and design debt**
+- A way to anchor thinking to the actual design work in Figma
+- Something you can open, write in, and close without ceremony
+
+Baseline is intentionally small. If it feels easy to use, it’s doing its job.
+
+---
+
+## What Baseline is not
+
+- A task tracker
+- A design spec
+- A comments replacement
+- A governance tool
+- A source of truth for “who approved what”
+
+Baseline won’t manage your process.  
+It just remembers what happened.
+
+---
+
+## How it works
+
+1. Select a layer or frame in Figma  
+2. Add an entry and choose a type (decision, assumption, trade-off, etc.)
+3. Write a short note explaining the rationale
+4. Save it
+
+Each entry:
+- is linked to the layer or frame it relates to
+- can be clicked to jump back to that context later
+- can be edited as thinking evolves
+- can be deleted if it’s no longer relevant
+
+When you need to share context outside Figma, you can export everything to Markdown.
+
+---
+
+## Exporting
+
+Baseline supports exporting all entries as Markdown, making it easy to:
+- paste into Notion or Google Docs
+- drop into a design review or PR
+- keep a lightweight audit trail of decisions
+
+No formatting gymnastics required.
+
+---
+
+## Design principles
+
+Baseline is guided by a few simple rules:
+
+- **Low cognitive load**  
+  If it takes effort to write, it won’t get written.
+
+- **Context over completeness**  
+  Short, honest notes beat perfect documentation.
+
+- **Human first**  
+  This tool is for designers working with other humans, not for process theatre.
+
+---
+
+## Status
+
+Baseline is intentionally scoped as a **v1**.
+
+It does a small number of things well and avoids feature creep by design. Future ideas exist, but simplicity comes first.
+
+---
+
+## Author
+
+Built by Michelle — product designer, design systems nerd, and someone who got tired of design decisions being quietly rewritten after the fact.
 
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
-
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
-
-For more information, visit https://www.typescriptlang.org/
-
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
-
-We recommend writing TypeScript code using Visual Studio code:
-
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
-
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.

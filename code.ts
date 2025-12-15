@@ -1,18 +1,18 @@
-figma.notify("Baseline TS compiled ✅");
+figma.notify("Baseline TS compiled v0.0.1 ✅");
 
 type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
 
 type JournalEntry = {
   id: string;
-  createdAt: string; // ISO
-  updatedAt?: string; // ISO (set when edited)
+  createdAt: string;
+  updatedAt?: string;
   type: EntryType;
   note: string;
 
   nodeId?: string;
   nodeName?: string;
-  pageId: string;
-  pageName: string;
+  pageId?: string;
+  pageName?: string;
 };
 
 const STORAGE_KEY = "baseline.journal.v1";
@@ -50,11 +50,11 @@ function getPageForNode(node: BaseNode): PageNode | null {
 }
 
 function isSceneNode(node: BaseNode): node is SceneNode {
-  // SceneNodes have positional properties like x/y
-  return (node as any).x !== undefined && (node as any).y !== undefined;
+  return (node as any).x !== undefined;
 }
 
 figma.showUI(__html__, { width: 360, height: 520 });
+
 
 figma.ui.onmessage = (msg) => {
   // Read
@@ -62,6 +62,13 @@ figma.ui.onmessage = (msg) => {
     figma.ui.postMessage({ type: "JOURNAL", entries: getJournal() });
     return;
   }
+
+  //Resize UI
+  if (msg.type === "RESIZE") {
+  const { width, height } = msg as { width: number; height: number };
+  figma.ui.resize(width, height);
+  return;
+}
 
   // Create
   if (msg.type === "ADD_ENTRY") {
@@ -80,10 +87,7 @@ figma.ui.onmessage = (msg) => {
       createdAt: new Date().toISOString(),
       type: entryType,
       note: cleanNote,
-      pageId: ctx.pageId,
-      pageName: ctx.pageName,
-      nodeId: ctx.nodeId,
-      nodeName: ctx.nodeName
+      ...ctx
     };
 
     const next = [entry, ...getJournal()];
@@ -94,58 +98,13 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-  // Filter by selection
-  if (msg.type === "FILTER_BY_SELECTION") {
-    const ctx = getSelectionContext();
-    const entries = getJournal();
-    const filtered = ctx.nodeId ? entries.filter((e) => e.nodeId === ctx.nodeId) : [];
-    figma.ui.postMessage({ type: "SELECTION_ENTRIES", entries: filtered, ctx });
-    return;
-  }
-
-  // Export
-  if (msg.type === "EXPORT_MD") {
-    const entries = getJournal();
-    const md = toMarkdown(entries);
-    figma.ui.postMessage({ type: "EXPORT_MD_RESULT", markdown: md });
-    return;
-  }
-
-  // Navigate to entry’s node
-  if (msg.type === "GO_TO_ENTRY") {
-    const nodeId = msg.nodeId as string | undefined;
-
-    if (!nodeId) {
-      figma.ui.postMessage({ type: "ERROR", message: "This entry isn’t linked to a layer/frame." });
-      return;
-    }
-
-    const node = figma.getNodeById(nodeId);
-
-    if (!node || node.removed) {
-      figma.ui.postMessage({
-        type: "ERROR",
-        message: "That layer/frame no longer exists (maybe it was deleted)."
-      });
-      return;
-    }
-
-    const page = getPageForNode(node as BaseNode);
-    if (page) figma.currentPage = page;
-
-    if (isSceneNode(node as BaseNode)) {
-      const scene = node as SceneNode;
-      figma.currentPage.selection = [scene];
-      figma.viewport.scrollAndZoomIntoView([scene]);
-    } else {
-      figma.ui.postMessage({ type: "ERROR", message: "Can’t zoom to that node type." });
-    }
-    return;
-  }
-
   // Update
   if (msg.type === "UPDATE_ENTRY") {
-    const { id, entryType, note } = msg as { id: string; entryType: EntryType; note: string };
+    const { id, entryType, note } = msg as {
+      id: string;
+      entryType: EntryType;
+      note: string;
+    };
 
     const cleanNote = String(note ?? "").trim();
     if (!cleanNote) {
@@ -157,7 +116,7 @@ figma.ui.onmessage = (msg) => {
     const idx = entries.findIndex((e) => e.id === id);
 
     if (idx === -1) {
-      figma.ui.postMessage({ type: "ERROR", message: "Entry not found (maybe it was deleted)." });
+      figma.ui.postMessage({ type: "ERROR", message: "Entry not found." });
       return;
     }
 
@@ -178,20 +137,44 @@ figma.ui.onmessage = (msg) => {
   if (msg.type === "DELETE_ENTRY") {
     const { id } = msg as { id: string };
 
-    const entries = getJournal();
-    const next = entries.filter((e) => e.id !== id);
-
+    const next = getJournal().filter((e) => e.id !== id);
     setJournal(next);
+
     figma.ui.postMessage({ type: "JOURNAL", entries: next });
     figma.notify("Deleted entry");
     return;
   }
 
-  // Clear all
-  if (msg.type === "CLEAR_ALL") {
-    setJournal([]);
-    figma.ui.postMessage({ type: "JOURNAL", entries: [] });
-    figma.notify("Baseline cleared");
+  // Jump to linked node
+  if (msg.type === "GO_TO_ENTRY") {
+    const nodeId = msg.nodeId as string | undefined;
+    if (!nodeId) return;
+
+    const node = figma.getNodeById(nodeId);
+    if (!node || node.removed) {
+      figma.ui.postMessage({
+        type: "ERROR",
+        message: "Linked layer/frame no longer exists."
+      });
+      return;
+    }
+
+    const page = getPageForNode(node);
+    if (page) figma.currentPage = page;
+
+    if (isSceneNode(node)) {
+      figma.currentPage.selection = [node];
+      figma.viewport.scrollAndZoomIntoView([node]);
+    }
+    return;
+  }
+
+  // Export
+  if (msg.type === "EXPORT_MD") {
+    figma.ui.postMessage({
+      type: "EXPORT_MD_RESULT",
+      markdown: toMarkdown(getJournal())
+    });
     return;
   }
 };
@@ -204,16 +187,11 @@ function toMarkdown(entries: JournalEntry[]) {
 
   for (const e of entries) {
     const created = new Date(e.createdAt).toLocaleString();
-    const edited = e.updatedAt ? new Date(e.updatedAt).toLocaleString() : null;
+    const edited = e.updatedAt
+      ? ` (edited ${new Date(e.updatedAt).toLocaleString()})`
+      : ``;
 
-    const where =
-      e.nodeName && e.pageName ? `(${e.pageName} → ${e.nodeName})` :
-      e.pageName ? `(${e.pageName})` :
-      ``;
-
-    const editedLabel = edited ? ` (edited ${edited})` : ``;
-
-    lines.push(`## ${e.type} — ${created}${editedLabel} ${where}`.trim());
+    lines.push(`## ${e.type} — ${created}${edited}`);
     lines.push(e.note);
     lines.push(``);
   }
