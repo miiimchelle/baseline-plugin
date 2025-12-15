@@ -81,6 +81,12 @@
       for (const e of entries) {
         const item = document.createElement("div");
         item.className = "item";
+        item.style.cursor = e.nodeId ? "pointer" : "default";
+
+      item.onclick = () => {
+      if (!e.nodeId) return;
+      parent.postMessage({ pluginMessage: { type: "GO_TO_ENTRY", nodeId: e.nodeId } }, "*");
+      };
 
         const meta = document.createElement("div");
         meta.className = "meta";

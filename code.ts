@@ -50,6 +50,15 @@ function getSelectionContext() {
   };
 }
 
+function getPageForNode(node: BaseNode): PageNode | null {
+  let current: BaseNode | null = node;
+  while (current && current.type !== "PAGE") {
+    current = current.parent;
+  }
+  return (current && current.type === "PAGE") ? (current as PageNode) : null;
+}
+
+
 figma.showUI(__html__, { width: 360, height: 520 });
 
 figma.ui.onmessage = (msg) => {
@@ -100,6 +109,30 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
+    if (msg.type === "GO_TO_ENTRY") {
+    const nodeId = msg.nodeId as string | undefined;
+
+    if (!nodeId) {
+      figma.ui.postMessage({ type: "ERROR", message: "This entry isn’t linked to a layer/frame." });
+      return;
+    }
+
+    const node = figma.getNodeById(nodeId);
+
+    if (!node || node.removed) {
+      figma.ui.postMessage({ type: "ERROR", message: "That layer/frame no longer exists (maybe it was deleted)." });
+      return;
+    }
+
+    const page = getPageForNode(node as BaseNode);
+    if (page) figma.currentPage = page;
+
+    figma.currentPage.selection = [node as SceneNode];
+    figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
+    return;
+  }
+
+
   if (msg.type === "CLEAR_ALL") {
     setJournal([]);
     figma.ui.postMessage({ type: "JOURNAL", entries: [] });
@@ -107,6 +140,8 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 };
+
+
 
 function toMarkdown(entries: JournalEntry[]) {
   const lines: string[] = [];
