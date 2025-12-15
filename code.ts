@@ -1,27 +1,18 @@
-// This plugin will open a window to prompt the user to enter a number, and
-// it will then create that many rectangles on the screen.
-
-// This file holds the main code for plugins. Code in this file has access to
-// the *figma document* via the figma global object.
-// You can access browser APIs in the <script> tag inside "ui.html" which has a
-// full browser environment (See https://www.figma.com/plugin-docs/how-plugins-run).
-
-
 figma.notify("Baseline TS compiled ✅");
 
-// This shows the HTML page in "ui.html".
 type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
 
 type JournalEntry = {
   id: string;
   createdAt: string; // ISO
+  updatedAt?: string; // ISO (set when edited)
   type: EntryType;
   note: string;
 
   nodeId?: string;
   nodeName?: string;
-  pageId?: string;
-  pageName?: string;
+  pageId: string;
+  pageName: string;
 };
 
 const STORAGE_KEY = "baseline.journal.v1";
@@ -55,34 +46,45 @@ function getPageForNode(node: BaseNode): PageNode | null {
   while (current && current.type !== "PAGE") {
     current = current.parent;
   }
-  return (current && current.type === "PAGE") ? (current as PageNode) : null;
+  return current && current.type === "PAGE" ? (current as PageNode) : null;
 }
 
+function isSceneNode(node: BaseNode): node is SceneNode {
+  // SceneNodes have positional properties like x/y
+  return (node as any).x !== undefined && (node as any).y !== undefined;
+}
 
 figma.showUI(__html__, { width: 360, height: 520 });
 
 figma.ui.onmessage = (msg) => {
+  // Read
   if (msg.type === "GET_JOURNAL") {
     figma.ui.postMessage({ type: "JOURNAL", entries: getJournal() });
     return;
   }
 
+  // Create
   if (msg.type === "ADD_ENTRY") {
     const { entryType, note } = msg as { entryType: EntryType; note: string };
 
+    const cleanNote = String(note ?? "").trim();
+    if (!cleanNote) {
+      figma.ui.postMessage({ type: "ERROR", message: "Write a note first." });
+      return;
+    }
+
     const ctx = getSelectionContext();
+
     const entry: JournalEntry = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       createdAt: new Date().toISOString(),
       type: entryType,
-      note: String(note ?? "").trim(),
-      ...ctx
+      note: cleanNote,
+      pageId: ctx.pageId,
+      pageName: ctx.pageName,
+      nodeId: ctx.nodeId,
+      nodeName: ctx.nodeName
     };
-
-    if (!entry.note) {
-      figma.ui.postMessage({ type: "ERROR", message: "Write a note first." });
-      return;
-    }
 
     const next = [entry, ...getJournal()];
     setJournal(next);
@@ -92,16 +94,16 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
+  // Filter by selection
   if (msg.type === "FILTER_BY_SELECTION") {
     const ctx = getSelectionContext();
     const entries = getJournal();
-    const filtered = ctx.nodeId
-      ? entries.filter((e) => e.nodeId === ctx.nodeId)
-      : [];
+    const filtered = ctx.nodeId ? entries.filter((e) => e.nodeId === ctx.nodeId) : [];
     figma.ui.postMessage({ type: "SELECTION_ENTRIES", entries: filtered, ctx });
     return;
   }
 
+  // Export
   if (msg.type === "EXPORT_MD") {
     const entries = getJournal();
     const md = toMarkdown(entries);
@@ -109,7 +111,8 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-    if (msg.type === "GO_TO_ENTRY") {
+  // Navigate to entry’s node
+  if (msg.type === "GO_TO_ENTRY") {
     const nodeId = msg.nodeId as string | undefined;
 
     if (!nodeId) {
@@ -120,19 +123,29 @@ figma.ui.onmessage = (msg) => {
     const node = figma.getNodeById(nodeId);
 
     if (!node || node.removed) {
-      figma.ui.postMessage({ type: "ERROR", message: "That layer/frame no longer exists (maybe it was deleted)." });
+      figma.ui.postMessage({
+        type: "ERROR",
+        message: "That layer/frame no longer exists (maybe it was deleted)."
+      });
       return;
     }
 
     const page = getPageForNode(node as BaseNode);
     if (page) figma.currentPage = page;
 
-    figma.currentPage.selection = [node as SceneNode];
-    figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
+    if (isSceneNode(node as BaseNode)) {
+      const scene = node as SceneNode;
+      figma.currentPage.selection = [scene];
+      figma.viewport.scrollAndZoomIntoView([scene]);
+    } else {
+      figma.ui.postMessage({ type: "ERROR", message: "Can’t zoom to that node type." });
+    }
     return;
   }
+
+  // Update
   if (msg.type === "UPDATE_ENTRY") {
-    const { id, entryType, note } = msg as { id: string; entryType: any; note: string };
+    const { id, entryType, note } = msg as { id: string; entryType: EntryType; note: string };
 
     const cleanNote = String(note ?? "").trim();
     if (!cleanNote) {
@@ -141,18 +154,18 @@ figma.ui.onmessage = (msg) => {
     }
 
     const entries = getJournal();
-    const idx = entries.findIndex((e: any) => e.id === id);
+    const idx = entries.findIndex((e) => e.id === id);
 
     if (idx === -1) {
       figma.ui.postMessage({ type: "ERROR", message: "Entry not found (maybe it was deleted)." });
       return;
     }
 
-    // Keep original node/page linkage; only update fields
     entries[idx] = {
       ...entries[idx],
       type: entryType,
-      note: cleanNote
+      note: cleanNote,
+      updatedAt: new Date().toISOString()
     };
 
     setJournal(entries);
@@ -161,11 +174,12 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
+  // Delete
   if (msg.type === "DELETE_ENTRY") {
     const { id } = msg as { id: string };
 
     const entries = getJournal();
-    const next = entries.filter((e: any) => e.id !== id);
+    const next = entries.filter((e) => e.id !== id);
 
     setJournal(next);
     figma.ui.postMessage({ type: "JOURNAL", entries: next });
@@ -173,7 +187,7 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-
+  // Clear all
   if (msg.type === "CLEAR_ALL") {
     setJournal([]);
     figma.ui.postMessage({ type: "JOURNAL", entries: [] });
@@ -182,23 +196,27 @@ figma.ui.onmessage = (msg) => {
   }
 };
 
-
-
 function toMarkdown(entries: JournalEntry[]) {
   const lines: string[] = [];
   lines.push(`# Baseline — design decision journal`);
   lines.push(`Generated: ${new Date().toISOString()}`);
   lines.push(``);
+
   for (const e of entries) {
-    const when = new Date(e.createdAt).toLocaleString();
+    const created = new Date(e.createdAt).toLocaleString();
+    const edited = e.updatedAt ? new Date(e.updatedAt).toLocaleString() : null;
+
     const where =
       e.nodeName && e.pageName ? `(${e.pageName} → ${e.nodeName})` :
       e.pageName ? `(${e.pageName})` :
       ``;
 
-    lines.push(`## ${e.type} — ${when} ${where}`.trim());
+    const editedLabel = edited ? ` (edited ${edited})` : ``;
+
+    lines.push(`## ${e.type} — ${created}${editedLabel} ${where}`.trim());
     lines.push(e.note);
     lines.push(``);
   }
+
   return lines.join("\n");
 }
