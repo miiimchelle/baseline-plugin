@@ -15,7 +15,6 @@ Next, install TypeScript using the command:
 
 Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
 
-  npm install --save-dev @figma/plugin-typings
 
 If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
 is already valid Typescript code.

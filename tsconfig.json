@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "lib": ["es6"],
+    "target": "ES2017",
+    "lib": ["ES2017"],
     "strict": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@figma"
-    ]
-  }
+
+    "module": "commonjs",
+    "rootDir": ".",
+    "outDir": "dist",
+
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
+    "skipLibCheck": true
+  },
+  "include": ["code.ts"]
 }

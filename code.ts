@@ -6,6 +6,9 @@
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser environment (See https://www.figma.com/plugin-docs/how-plugins-run).
 
+
+figma.notify("Baseline TS compiled ✅");
+
 // This shows the HTML page in "ui.html".
 type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
 
