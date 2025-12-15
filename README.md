@@ -98,6 +98,6 @@ It does a small number of things well and avoids feature creep by design. Future
 
 ## Author
 
-Built by Michelle — product designer, design systems nerd, and someone who got tired of design decisions being quietly rewritten after the fact.
+Built by Michelle, a product designer, design systems nerd, and someone who got tired of design decisions being quietly rewritten after the constantly repeating themselves.
 
 
