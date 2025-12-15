@@ -13,6 +13,11 @@
     .error { color: #b00020; margin-top: 8px; }
     .list { margin-top: 12px; max-height: 220px; overflow: auto; border-top: 1px solid #eee; padding-top: 12px; }
     .item { padding: 10px 0; border-bottom: 1px solid #eee; }
+    .item { padding: 10px 8px; border-bottom: 1px solid #eee; border-radius: 8px; }
+    .item.clickable:hover { background: #f7f7f7; }
+    .item .hint { display: none; float: right; color: #666; font-size: 11px; }
+    .item.clickable:hover .hint { display: inline; }
+
     .meta { color: #666; font-size: 11px; margin-bottom: 4px; }
     .pill { display: inline-block; padding: 2px 6px; border: 1px solid #ddd; border-radius: 999px; font-size: 11px; margin-right: 6px; }
     .md { width: 100%; height: 120px; margin-top: 8px; }
@@ -78,21 +83,27 @@
         return;
       }
 
-      for (const e of entries) {
-        const item = document.createElement("div");
-        item.className = "item";
-        item.style.cursor = e.nodeId ? "pointer" : "default";
+      const item = document.createElement("div");
+      const clickable = !!e.nodeId;
+      item.className = "item" + (clickable ? " clickable" : "");
+      item.style.cursor = clickable ? "pointer" : "default";
 
       item.onclick = () => {
-      if (!e.nodeId) return;
-      parent.postMessage({ pluginMessage: { type: "GO_TO_ENTRY", nodeId: e.nodeId } }, "*");
+        if (!clickable) return;
+        parent.postMessage(
+      { pluginMessage: { type: "GO_TO_ENTRY", nodeId: e.nodeId } },
+      "*"
+      );
       };
 
         const meta = document.createElement("div");
         meta.className = "meta";
         const when = new Date(e.createdAt).toLocaleString();
         const where = e.pageName && e.nodeName ? `${e.pageName} → ${e.nodeName}` : (e.pageName || "");
-        meta.innerHTML = `<span class="pill">${e.type}</span> ${when}${where ? " · " + where : ""}`;
+       meta.innerHTML =
+      `<span class="pill">${e.type}</span> ${when}${where ? " · " + where : ""}` +
+      (clickable ? `<span class="hint">↗ Jump</span>` : ``);
+
 
         const note = document.createElement("div");
         note.textContent = e.note;
@@ -101,7 +112,7 @@
         item.appendChild(note);
         list.appendChild(item);
       }
-    }
+    
 
     function setError(msg) { $("error").textContent = msg || ""; }
 
@@ -145,6 +156,12 @@
       if (msg.type === "JOURNAL") {
         render(msg.entries, "All entries");
       }
+
+      if (msg.type === "JOURNAL") {
+        $("note").value = "";
+        render(msg.entries, "All entries");
+      }
+
 
       if (msg.type === "SELECTION_ENTRIES") {
         const title = msg.ctx?.nodeId ? `Linked to selection: ${msg.ctx.nodeName || "Unnamed"}` : "No selection";
