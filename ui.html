@@ -12,11 +12,23 @@
     .row button { width: 100%; }
     .error { color: #b00020; margin-top: 8px; }
     .list { margin-top: 12px; max-height: 220px; overflow: auto; border-top: 1px solid #eee; padding-top: 12px; }
-    .item { padding: 10px 0; border-bottom: 1px solid #eee; }
     .item { padding: 10px 8px; border-bottom: 1px solid #eee; border-radius: 8px; }
     .item.clickable:hover { background: #f7f7f7; }
     .item .hint { display: none; float: right; color: #666; font-size: 11px; }
     .item.clickable:hover .hint { display: inline; }
+    .actions { margin-top: 6px; display: flex; gap: 8px; }
+    .action-btn {
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 8px;
+    font-size: 11px;
+    cursor: pointer;
+    }
+    .action-btn:hover { background: #f7f7f7; }
+    .action-danger { border-color: #f0c2c2; }
+    .action-danger:hover { background: #fff1f1; }
 
     .meta { color: #666; font-size: 11px; margin-bottom: 4px; }
     .pill { display: inline-block; padding: 2px 6px; border: 1px solid #ddd; border-radius: 999px; font-size: 11px; margin-right: 6px; }
@@ -45,6 +57,7 @@
   </label>
 
   <button id="save">Save entry</button>
+  <button id="cancelEdit" style="display:none;">Cancel edit</button>
 
   <div class="row">
     <button id="viewAll">View all</button>
@@ -65,65 +78,123 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
+    let editingId = null;
+
+function setEditing(id, entry) {
+  editingId = id;
+  $("type").value = entry.type;
+  $("note").value = entry.note;
+  $("save").textContent = "Update entry";
+  $("cancelEdit").style.display = "block";
+}
+
+function clearEditing() {
+  editingId = null;
+  $("save").textContent = "Save entry";
+  $("cancelEdit").style.display = "none";
+}
 
     function render(entries, title) {
-      const list = $("list");
-      list.innerHTML = "";
-      if (title) {
-        const t = document.createElement("div");
-        t.className = "meta";
-        t.textContent = title;
-        list.appendChild(t);
-      }
-      if (!entries.length) {
-        const empty = document.createElement("div");
-        empty.className = "meta";
-        empty.textContent = "No entries yet.";
-        list.appendChild(empty);
-        return;
-      }
+  const list = $("list");
+  list.innerHTML = "";
 
-      const item = document.createElement("div");
-      const clickable = !!e.nodeId;
-      item.className = "item" + (clickable ? " clickable" : "");
-      item.style.cursor = clickable ? "pointer" : "default";
+  if (title) {
+    const t = document.createElement("div");
+    t.className = "meta";
+    t.textContent = title;
+    list.appendChild(t);
+  }
 
-      item.onclick = () => {
-        if (!clickable) return;
-        parent.postMessage(
-      { pluginMessage: { type: "GO_TO_ENTRY", nodeId: e.nodeId } },
-      "*"
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "meta";
+    empty.textContent = "No entries yet.";
+    list.appendChild(empty);
+    return;
+  }
+  const actions = document.createElement("div");
+actions.className = "actions";
+
+const editBtn = document.createElement("button");
+editBtn.className = "action-btn";
+editBtn.textContent = "Edit";
+editBtn.onclick = (ev) => {
+  ev.stopPropagation();
+  setEditing(e.id, e);
+};
+
+const delBtn = document.createElement("button");
+delBtn.className = "action-btn action-danger";
+delBtn.textContent = "Delete";
+delBtn.onclick = (ev) => {
+  ev.stopPropagation();
+  const ok = confirm("Delete this entry?");
+  if (!ok) return;
+  parent.postMessage({ pluginMessage: { type: "DELETE_ENTRY", id: e.id } }, "*");
+};
+
+actions.appendChild(editBtn);
+actions.appendChild(delBtn);
+item.appendChild(actions);
+
+
+  for (const e of entries) {
+    const item = document.createElement("div");
+    const clickable = !!e.nodeId;
+
+    item.className = "item" + (clickable ? " clickable" : "");
+    item.style.cursor = clickable ? "pointer" : "default";
+    $("cancelEdit").onclick = () => {
+  clearEditing();
+  $("note").value = "";
+};
+
+    item.onclick = () => {
+      if (!clickable) return;
+      parent.postMessage(
+        { pluginMessage: { type: "GO_TO_ENTRY", nodeId: e.nodeId } },
+        "*"
       );
-      };
+    };
 
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        const when = new Date(e.createdAt).toLocaleString();
-        const where = e.pageName && e.nodeName ? `${e.pageName} → ${e.nodeName}` : (e.pageName || "");
-       meta.innerHTML =
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const when = new Date(e.createdAt).toLocaleString();
+    const where =
+      e.pageName && e.nodeName ? `${e.pageName} → ${e.nodeName}` : (e.pageName || "");
+
+    meta.innerHTML =
       `<span class="pill">${e.type}</span> ${when}${where ? " · " + where : ""}` +
       (clickable ? `<span class="hint">↗ Jump</span>` : ``);
 
+    const note = document.createElement("div");
+    note.textContent = e.note;
 
-        const note = document.createElement("div");
-        note.textContent = e.note;
+    item.appendChild(meta);
+    item.appendChild(note);
+    list.appendChild(item);
+  }
+}
 
-        item.appendChild(meta);
-        item.appendChild(note);
-        list.appendChild(item);
-      }
     
 
     function setError(msg) { $("error").textContent = msg || ""; }
 
     $("save").onclick = () => {
-      setError("");
-      parent.postMessage({ pluginMessage: {
-        type: "ADD_ENTRY",
-        entryType: $("type").value,
-        note: $("note").value
-      }}, "*");
-    };
+    setError("");
+    const payload = {
+    entryType: $("type").value,
+    note: $("note").value
+  };
+
+  if (editingId) {
+    parent.postMessage({ pluginMessage: { type: "UPDATE_ENTRY", id: editingId, ...payload } }, "*");
+  } else {
+    parent.postMessage({ pluginMessage: { type: "ADD_ENTRY", ...payload } }, "*");
+  }
+};
+
 
     $("viewAll").onclick = () => {
       $("md").style.display = "none";
@@ -154,14 +225,10 @@
       if (msg.type === "ERROR") setError(msg.message);
 
       if (msg.type === "JOURNAL") {
-        render(msg.entries, "All entries");
+      if (editingId) clearEditing();
+      $("note").value = "";
+      render(msg.entries, "All entries");
       }
-
-      if (msg.type === "JOURNAL") {
-        $("note").value = "";
-        render(msg.entries, "All entries");
-      }
-
 
       if (msg.type === "SELECTION_ENTRIES") {
         const title = msg.ctx?.nodeId ? `Linked to selection: ${msg.ctx.nodeName || "Unnamed"}` : "No selection";

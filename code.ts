@@ -131,6 +131,47 @@ figma.ui.onmessage = (msg) => {
     figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
     return;
   }
+  if (msg.type === "UPDATE_ENTRY") {
+    const { id, entryType, note } = msg as { id: string; entryType: any; note: string };
+
+    const cleanNote = String(note ?? "").trim();
+    if (!cleanNote) {
+      figma.ui.postMessage({ type: "ERROR", message: "Write a note first." });
+      return;
+    }
+
+    const entries = getJournal();
+    const idx = entries.findIndex((e: any) => e.id === id);
+
+    if (idx === -1) {
+      figma.ui.postMessage({ type: "ERROR", message: "Entry not found (maybe it was deleted)." });
+      return;
+    }
+
+    // Keep original node/page linkage; only update fields
+    entries[idx] = {
+      ...entries[idx],
+      type: entryType,
+      note: cleanNote
+    };
+
+    setJournal(entries);
+    figma.ui.postMessage({ type: "JOURNAL", entries });
+    figma.notify("Updated entry");
+    return;
+  }
+
+  if (msg.type === "DELETE_ENTRY") {
+    const { id } = msg as { id: string };
+
+    const entries = getJournal();
+    const next = entries.filter((e: any) => e.id !== id);
+
+    setJournal(next);
+    figma.ui.postMessage({ type: "JOURNAL", entries: next });
+    figma.notify("Deleted entry");
+    return;
+  }
 
 
   if (msg.type === "CLEAR_ALL") {
