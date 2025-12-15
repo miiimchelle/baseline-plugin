@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font: 12px/1.4 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 16px; }
+    h1 { font-size: 14px; margin: 0 0 8px; }
+    .tagline { color: #666; margin-bottom: 12px; }
+    textarea { width: 100%; height: 90px; resize: vertical; }
+    select, button { width: 100%; height: 32px; margin-top: 8px; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    .row button { width: 100%; }
+    .error { color: #b00020; margin-top: 8px; }
+    .list { margin-top: 12px; max-height: 220px; overflow: auto; border-top: 1px solid #eee; padding-top: 12px; }
+    .item { padding: 10px 0; border-bottom: 1px solid #eee; }
+    .meta { color: #666; font-size: 11px; margin-bottom: 4px; }
+    .pill { display: inline-block; padding: 2px 6px; border: 1px solid #ddd; border-radius: 999px; font-size: 11px; margin-right: 6px; }
+    .md { width: 100%; height: 120px; margin-top: 8px; }
+    .small { font-size: 11px; color: #666; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Baseline</h1>
+  <div class="tagline">Align on why, not just what.</div>
+
+  <label>
+    Entry type
+    <select id="type">
+      <option value="decision">Decision</option>
+      <option value="assumption">Assumption</option>
+      <option value="tradeoff">Trade-off</option>
+      <option value="feedback">Feedback outcome</option>
+      <option value="debt">Design debt</option>
+    </select>
+  </label>
+
+  <label style="display:block; margin-top:10px;">
+    Note
+    <textarea id="note" placeholder="Write the decision + short rationale."></textarea>
+  </label>
+
+  <button id="save">Save entry</button>
+
+  <div class="row">
+    <button id="viewAll">View all</button>
+    <button id="viewSel">Linked to selection</button>
+  </div>
+
+  <div class="row">
+    <button id="export">Export Markdown</button>
+    <button id="clear" title="Clears all entries in this file">Clear</button>
+  </div>
+
+  <div id="error" class="error"></div>
+
+  <textarea id="md" class="md" style="display:none;" readonly></textarea>
+  <div id="mdHint" class="small" style="display:none;">Copy/paste this into Notion/Docs.</div>
+
+  <div class="list" id="list"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function render(entries, title) {
+      const list = $("list");
+      list.innerHTML = "";
+      if (title) {
+        const t = document.createElement("div");
+        t.className = "meta";
+        t.textContent = title;
+        list.appendChild(t);
+      }
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "meta";
+        empty.textContent = "No entries yet.";
+        list.appendChild(empty);
+        return;
+      }
+
+      for (const e of entries) {
+        const item = document.createElement("div");
+        item.className = "item";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const when = new Date(e.createdAt).toLocaleString();
+        const where = e.pageName && e.nodeName ? `${e.pageName} → ${e.nodeName}` : (e.pageName || "");
+        meta.innerHTML = `<span class="pill">${e.type}</span> ${when}${where ? " · " + where : ""}`;
+
+        const note = document.createElement("div");
+        note.textContent = e.note;
+
+        item.appendChild(meta);
+        item.appendChild(note);
+        list.appendChild(item);
+      }
+    }
+
+    function setError(msg) { $("error").textContent = msg || ""; }
+
+    $("save").onclick = () => {
+      setError("");
+      parent.postMessage({ pluginMessage: {
+        type: "ADD_ENTRY",
+        entryType: $("type").value,
+        note: $("note").value
+      }}, "*");
+    };
+
+    $("viewAll").onclick = () => {
+      $("md").style.display = "none";
+      $("mdHint").style.display = "none";
+      parent.postMessage({ pluginMessage: { type: "GET_JOURNAL" }}, "*");
+    };
+
+    $("viewSel").onclick = () => {
+      $("md").style.display = "none";
+      $("mdHint").style.display = "none";
+      parent.postMessage({ pluginMessage: { type: "FILTER_BY_SELECTION" }}, "*");
+    };
+
+    $("export").onclick = () => {
+      parent.postMessage({ pluginMessage: { type: "EXPORT_MD" }}, "*");
+    };
+
+    $("clear").onclick = () => {
+      const ok = confirm("Clear all Baseline entries in this file?");
+      if (!ok) return;
+      parent.postMessage({ pluginMessage: { type: "CLEAR_ALL" }}, "*");
+    };
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === "ERROR") setError(msg.message);
+
+      if (msg.type === "JOURNAL") {
+        render(msg.entries, "All entries");
+      }
+
+      if (msg.type === "SELECTION_ENTRIES") {
+        const title = msg.ctx?.nodeId ? `Linked to selection: ${msg.ctx.nodeName || "Unnamed"}` : "No selection";
+        render(msg.entries, title);
+      }
+
+      if (msg.type === "EXPORT_MD_RESULT") {
+        $("md").value = msg.markdown;
+        $("md").style.display = "block";
+        $("mdHint").style.display = "block";
+      }
+    };
+
+    // initial load
+    parent.postMessage({ pluginMessage: { type: "GET_JOURNAL" }}, "*");
+  </script>
+</body>
+</html>
