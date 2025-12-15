@@ -5,7 +5,7 @@
 // the *figma document* via the figma global object.
 // You can access browser APIs in the <script> tag inside "ui.html" which has a
 // full browser environment (See https://www.figma.com/plugin-docs/how-plugins-run).
-figma.notify("Running Baseline 🎉");
+figma.notify("Baseline TS compiled ✅");
 const STORAGE_KEY = "baseline.journal.v1";
 function getJournal() {
     const raw = figma.root.getPluginData(STORAGE_KEY);
