@@ -1,3 +1,13 @@
+# How to use
+
+After pulling or switching branches, run:
+
+npm run build
+
+or keep the compiler running with:
+
+npm run watch
+
 # Baseline
 
 **Baseline** is a lightweight design decision journal for Figma.
@@ -14,10 +24,7 @@ Baseline exists because I have ADHD, a busy brain, and a strong grasp on reality
 
 In fast-moving teams, design decisions have a funny way of being “remembered differently” over time. Context gets lost. Rationales fade. Stakeholders revisit choices as if they were never discussed. And designers are left defending decisions they already explained (sometimes multiple times).
 
-Baseline is a calm, low-friction way to capture design rationale at the moment it’s made, so future conversations are grounded in facts, not vibes.
-
-It’s not about being defensive.  
-It’s about preserving context.
+Baseline is a calm, low-friction way to capture design rationale at the moment it’s made, so future conversations are grounded in facts.
 
 ---
 
@@ -58,7 +65,7 @@ Each entry:
 - can be edited as thinking evolves
 - can be deleted if it’s no longer relevant
 
-When you need to share context outside Figma, you can export everything to Markdown.
+When you need to share context outside Figma, you can export everything to Markdown, maybe put it in a Loop component.
 
 ---
 
@@ -68,8 +75,6 @@ Baseline supports exporting all entries as Markdown, making it easy to:
 - paste into Notion or Google Docs
 - drop into a design review or PR
 - keep a lightweight audit trail of decisions
-
-No formatting gymnastics required.
 
 ---
 
@@ -92,13 +97,28 @@ Baseline is guided by a few simple rules:
 
 Baseline is intentionally scoped as a **v1**.
 
-It does a small number of things well and avoids feature creep by design. Future ideas exist, but simplicity comes first.
+It does a small number of things well and avoids feature creep by design. We are starting simple.
+
+## Security & privacy considerations
+
+Baseline is intentionally designed to be low-risk.
+
+- All entries are stored using Figma’s plugin data API and live **inside the Figma file**.
+- No data is sent to external services.
+- No network requests are made.
+- No authentication, secrets, or credentials are handled by the plugin.
+
+Anyone with **edit access** to the Figma file can view, edit, or delete Baseline entries. As such, Baseline should be treated as a **working design journal**, not an immutable audit log or governance record.
+
+When exporting entries to Markdown, content may leave Figma’s access controls. Users should take care not to include sensitive, personal, or confidential information.
+
+Baseline is designed to preserve context and rationale.
 
 ---
 
 ## Author
 
-Built by Michelle, a product designer, design systems nerd, and someone who got tired of design decisions being quietly rewritten after the constantly repeating themselves.
+Built by Michelle, a product designer, and someone who got tired of design decisions being quietly rewritten.
 
 ## Development
 
