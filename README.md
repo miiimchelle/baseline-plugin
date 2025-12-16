@@ -99,6 +99,20 @@ Baseline is intentionally scoped as a **v1**.
 
 It does a small number of things well and avoids feature creep by design. We are starting simple.
 
+## Security & privacy considerations
+
+Baseline is intentionally designed to be low-risk.
+
+- All entries are stored using Figma’s plugin data API and live **inside the Figma file**.
+- No data is sent to external services.
+- No network requests are made.
+- No authentication, secrets, or credentials are handled by the plugin.
+
+Anyone with **edit access** to the Figma file can view, edit, or delete Baseline entries. As such, Baseline should be treated as a **working design journal**, not an immutable audit log or governance record.
+
+When exporting entries to Markdown, content may leave Figma’s access controls. Users should take care not to include sensitive, personal, or confidential information.
+
+Baseline is designed to preserve context and rationale.
 ---
 
 ## Author
