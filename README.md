@@ -1,3 +1,13 @@
+# How to use
+
+After pulling or switching branches, run:
+
+npm run build
+
+or keep the compiler running with:
+
+npm run watch
+
 # Baseline
 
 **Baseline** is a lightweight design decision journal for Figma.
