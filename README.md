@@ -120,13 +120,4 @@ Baseline is designed to preserve context and rationale.
 
 Built by Michelle, a product designer, and someone who got tired of design decisions being quietly rewritten.
 
-## Development
-
-After pulling or switching branches, run:
-
-npm run build
-
-or keep the compiler running with:
-
-npm run watch
 

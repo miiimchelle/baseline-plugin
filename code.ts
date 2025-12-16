@@ -1,4 +1,4 @@
-figma.notify("Baseline TS compiled v0.0.1 ✅");
+figma.notify("Baseline TS compiled v0.0.2 ✅");
 
 type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
 
@@ -11,6 +11,8 @@ type JournalEntry = {
 
   nodeId?: string;
   nodeName?: string;
+  nodeUrl?: string;
+
   pageId?: string;
   pageName?: string;
 };
@@ -31,11 +33,30 @@ function setJournal(entries: JournalEntry[]) {
   figma.root.setPluginData(STORAGE_KEY, JSON.stringify(entries));
 }
 
+function nodeIdToUrlFormat(nodeId: string) {
+  // plugin uses "38:4", Figma URLs use "38-4"
+  return nodeId.replace(/:/g, "-");
+}
+
+function buildNodeUrl(nodeId?: string) {
+  const key = figma.fileKey ?? undefined; // ✅ available with private plugin API
+  if (!key || !nodeId) return undefined;
+
+  const nodeIdForUrl = nodeIdToUrlFormat(nodeId);
+
+  return `https://www.figma.com/design/${key}/baseline?node-id=${encodeURIComponent(
+    nodeIdForUrl
+  )}`;
+}
+
 function getSelectionContext() {
   const node = figma.currentPage.selection[0];
+  const nodeId = node?.id;
+
   return {
-    nodeId: node?.id,
+    nodeId,
     nodeName: node?.name,
+    nodeUrl: buildNodeUrl(nodeId),
     pageId: figma.currentPage.id,
     pageName: figma.currentPage.name
   };
@@ -55,22 +76,18 @@ function isSceneNode(node: BaseNode): node is SceneNode {
 
 figma.showUI(__html__, { width: 360, height: 520 });
 
-
 figma.ui.onmessage = (msg) => {
-  // Read
   if (msg.type === "GET_JOURNAL") {
     figma.ui.postMessage({ type: "JOURNAL", entries: getJournal() });
     return;
   }
 
-  //Resize UI
   if (msg.type === "RESIZE") {
-  const { width, height } = msg as { width: number; height: number };
-  figma.ui.resize(width, height);
-  return;
-}
+    const { width, height } = msg as { width: number; height: number };
+    figma.ui.resize(width, height);
+    return;
+  }
 
-  // Create
   if (msg.type === "ADD_ENTRY") {
     const { entryType, note } = msg as { entryType: EntryType; note: string };
 
@@ -98,7 +115,6 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-  // Update
   if (msg.type === "UPDATE_ENTRY") {
     const { id, entryType, note } = msg as {
       id: string;
@@ -133,7 +149,6 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-  // Delete
   if (msg.type === "DELETE_ENTRY") {
     const { id } = msg as { id: string };
 
@@ -145,7 +160,6 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-  // Jump to linked node
   if (msg.type === "GO_TO_ENTRY") {
     const nodeId = msg.nodeId as string | undefined;
     if (!nodeId) return;
@@ -169,7 +183,6 @@ figma.ui.onmessage = (msg) => {
     return;
   }
 
-  // Export
   if (msg.type === "EXPORT_MD") {
     figma.ui.postMessage({
       type: "EXPORT_MD_RESULT",
@@ -192,6 +205,19 @@ function toMarkdown(entries: JournalEntry[]) {
       : ``;
 
     lines.push(`## ${e.type} — ${created}${edited}`);
+
+    // Ensure older entries also get a URL on export (if they have nodeId)
+    const url = e.nodeUrl ?? buildNodeUrl(e.nodeId);
+
+    if (e.nodeName && url) {
+      lines.push(`Linked layer/frame: [${e.nodeName}](${url})`);
+      lines.push(`URL: ${url}`);
+      lines.push(``);
+    } else if (e.nodeName) {
+      lines.push(`Linked layer/frame: ${e.nodeName}`);
+      lines.push(``);
+    }
+
     lines.push(e.note);
     lines.push(``);
   }
