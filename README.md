@@ -113,6 +113,7 @@ Anyone with **edit access** to the Figma file can view, edit, or delete Baseline
 When exporting entries to Markdown, content may leave Figma’s access controls. Users should take care not to include sensitive, personal, or confidential information.
 
 Baseline is designed to preserve context and rationale.
+
 ---
 
 ## Author
