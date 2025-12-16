@@ -1,4 +1,4 @@
-figma.notify("Baseline TS compiled v0.0.2 ✅");
+figma.notify("Baseline TS compiled v1.0.1 ✅");
 
 type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
 
