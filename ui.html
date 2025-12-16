@@ -8,15 +8,58 @@
     h1 { font-size: 14px; margin: 0 0 8px; }
     .tagline { color: #666; margin-bottom: 12px; }
 
-    select, button { width: 100%; height: 32px; margin-top: 8px; }
-    textarea { width: 100%; height: 90px; resize: vertical; margin-top: 10px; }
+    /* Shadcn-style tabs */
+    .tabs-root { margin-bottom: 12px; }
+
+    .tabs-list {
+      display: inline-flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 10px;
+      padding: 4px;
+      background: #f4f4f5;
+      box-sizing: border-box;
+    }
+
+    .tabs-trigger {
+      flex: 1;
+      height: 28px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: #52525b;
+      margin-top: 0;              /* ✅ override global button margin */
+      width: 100%;                /* ✅ keep equal width */
+      transition: background 120ms ease, box-shadow 120ms ease, color 120ms ease;
+    }
+
+    .tabs-trigger[data-state="active"] {
+      background: #fff;
+      color: #09090b;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+
+    .tabs-trigger:focus-visible {
+      outline: 2px solid #000;
+      outline-offset: 2px;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    select, button { width: 100%; height: 32px; margin-top: 8px; box-sizing: border-box; }
+    textarea { width: 100%; height: 90px; resize: vertical; margin-top: 10px; box-sizing: border-box; }
 
     .label { font-size: 11px; color: #666; margin-top: 12px; margin-bottom: 4px; }
     .helper { font-size: 11px; color: #888; margin-bottom: 6px; }
 
     .error { color: #b00020; margin-top: 8px; }
 
-    .list { margin-top: 12px; max-height: 320px; overflow: auto; border-top: 1px solid #eee; padding-top: 12px; }
+    .list { margin-top: 12px; max-height: 320px; overflow: auto; border-top: 1px solid #eee; padding-top: 12px; padding-bottom: 12px; }
 
     .item { padding: 10px 8px; border-bottom: 1px solid #eee; border-radius: 8px; cursor: default; }
     .item.clickable { cursor: pointer; }
@@ -36,6 +79,7 @@
       font-size: 11px;
       cursor: pointer;
       width: auto;
+      margin-top: 0;
     }
     .action-btn:hover { background: #f7f7f7; }
 
@@ -46,34 +90,66 @@
   <h1>Baseline</h1>
   <div class="tagline">Capture design decisions, assumptions, trade-offs, and feedback directly in Figma.</div>
 
-  <div class="label">Entry type</div>
-  <div class="helper">What kind of thinking are you capturing?</div>
-  <select id="type">
-    <option value="decision">Decision</option>
-    <option value="assumption">Assumption</option>
-    <option value="tradeoff">Trade-off</option>
-    <option value="feedback">Feedback outcome</option>
-    <option value="debt">Design debt</option>
-  </select>
+  <div class="tabs-root">
+    <div class="tabs-list" role="tablist" aria-label="Baseline tabs">
+      <button
+        id="tabWrite"
+        class="tabs-trigger"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        data-state="active"
+      >
+        Write entry
+      </button>
 
-  <div class="label">Decision note</div>
-  <div class="helper">Capture the why, trade-offs, or context behind this decision.</div>
-  <textarea id="note" placeholder="e.g. We chose X over Y because…"></textarea>
-
-  <button id="save">Save entry</button>
-  <button id="cancelEdit" style="display:none;">Cancel edit</button>
-
-  <button id="export">Export Markdown</button>
+      <button
+        id="tabView"
+        class="tabs-trigger"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        data-state="inactive"
+      >
+        View entries
+      </button>
+    </div>
+  </div>
 
   <div id="error" class="error"></div>
 
-  <textarea id="md" class="md" readonly></textarea>
+  <!-- TAB 1: WRITE -->
+  <div id="panelWrite" class="panel active">
+    <div class="label">Entry type</div>
+    <div class="helper">What kind of thinking are you capturing?</div>
+    <select id="type">
+      <option value="decision">Decision</option>
+      <option value="assumption">Assumption</option>
+      <option value="tradeoff">Trade-off</option>
+      <option value="feedback">Feedback outcome</option>
+      <option value="debt">Design debt</option>
+    </select>
 
-  <div class="list" id="list"></div>
+    <div class="label">Decision note</div>
+    <div class="helper">Capture the why, trade-offs, or context behind this decision.</div>
+    <textarea id="note" placeholder="e.g. We chose X over Y because…"></textarea>
+
+    <button id="save">Save entry</button>
+    <button id="cancelEdit" style="display:none;">Cancel edit</button>
+  </div>
+
+  <!-- TAB 2: VIEW -->
+  <div id="panelView" class="panel">
+    <div class="list" id="list"></div>
+    <button id="export">Export Markdown</button>
+    <textarea id="md" class="md" readonly></textarea>
+  </div>
 
   <script>
     const $ = (id) => document.getElementById(id);
+
     let editingId = null;
+    let currentEntries = [];
 
     function setError(msg) {
       $("error").textContent = msg || "";
@@ -97,6 +173,30 @@
       );
     }
 
+    function setTab(tab) {
+      const isWrite = tab === "write";
+
+      $("tabWrite").dataset.state = isWrite ? "active" : "inactive";
+      $("tabView").dataset.state = isWrite ? "inactive" : "active";
+
+      $("tabWrite").setAttribute("aria-selected", String(isWrite));
+      $("tabView").setAttribute("aria-selected", String(!isWrite));
+
+      $("panelWrite").classList.toggle("active", isWrite);
+      $("panelView").classList.toggle("active", !isWrite);
+
+      // when opening View tab, refresh list (v0 behaviour)
+      if (!isWrite) {
+        $("md").style.display = "none";
+        parent.postMessage({ pluginMessage: { type: "GET_JOURNAL" } }, "*");
+      }
+
+      requestResize();
+    }
+
+    $("tabWrite").onclick = () => setTab("write");
+    $("tabView").onclick = () => setTab("view");
+
     function enterEditMode(entry) {
       editingId = entry.id;
       $("type").value = entry.type;
@@ -104,6 +204,9 @@
       $("save").textContent = "Update entry";
       $("cancelEdit").style.display = "block";
       $("note").focus();
+
+      // Editing lives in Write tab
+      setTab("write");
       requestResize();
     }
 
@@ -115,10 +218,11 @@
     }
 
     function render(entries) {
+      currentEntries = entries || [];
       const list = $("list");
       list.innerHTML = "";
 
-      if (!entries.length) {
+      if (!currentEntries.length) {
         const empty = document.createElement("div");
         empty.className = "meta";
         empty.textContent = "No entries yet.";
@@ -127,7 +231,7 @@
         return;
       }
 
-      for (const e of entries) {
+      for (const e of currentEntries) {
         const clickable = !!e.nodeId;
 
         const item = document.createElement("div");
