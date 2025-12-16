@@ -100,4 +100,13 @@ It does a small number of things well and avoids feature creep by design. Future
 
 Built by Michelle, a product designer, design systems nerd, and someone who got tired of design decisions being quietly rewritten after the constantly repeating themselves.
 
+## Development
+
+After pulling or switching branches, run:
+
+npm run build
+
+or keep the compiler running with:
+
+npm run watch
 
