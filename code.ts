@@ -211,7 +211,6 @@ function toMarkdown(entries: JournalEntry[]) {
 
     if (e.nodeName && url) {
       lines.push(`Linked layer/frame: [${e.nodeName}](${url})`);
-      lines.push(`URL: ${url}`);
       lines.push(``);
     } else if (e.nodeName) {
       lines.push(`Linked layer/frame: ${e.nodeName}`);
