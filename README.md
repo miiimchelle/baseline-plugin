@@ -1,5 +1,7 @@
 # How to use
 
+As I have no published this plugin yet, you'll need to manually upload the plugin in Figma' plugin (development).
+
 After pulling or switching branches, run:
 
 npm run build
