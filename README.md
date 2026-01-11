@@ -1,6 +1,6 @@
 # How to use
 
-As I have no published this plugin yet, you'll need to manually upload the plugin in Figma' plugin (development).
+As I have no published this plugin yet, you'll need to manually upload the plugin in Figma's plugin (development).
 
 After pulling or switching branches, run:
 
