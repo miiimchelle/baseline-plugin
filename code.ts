@@ -1,4 +1,4 @@
-figma.notify("Baseline TS compiled v1.0.1 ✅");
+figma.notify("Jot v2.0.0 ready");
 
 type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
 
@@ -17,7 +17,8 @@ type JournalEntry = {
   pageName?: string;
 };
 
-const STORAGE_KEY = "baseline.journal.v1";
+const STORAGE_KEY = "jot.journal.v1";
+const FILE_KEY_STORAGE = "jot.filekey.v1";
 
 function getJournal(): JournalEntry[] {
   const raw = figma.root.getPluginData(STORAGE_KEY);
@@ -33,20 +34,25 @@ function setJournal(entries: JournalEntry[]) {
   figma.root.setPluginData(STORAGE_KEY, JSON.stringify(entries));
 }
 
+function getStoredFileKey(): string | undefined {
+  const val = figma.root.getPluginData(FILE_KEY_STORAGE);
+  return val || undefined;
+}
+
+function setStoredFileKey(key: string) {
+  figma.root.setPluginData(FILE_KEY_STORAGE, key);
+}
+
 function nodeIdToUrlFormat(nodeId: string) {
-  // plugin uses "38:4", Figma URLs use "38-4"
   return nodeId.replace(/:/g, "-");
 }
 
 function buildNodeUrl(nodeId?: string) {
-  const key = figma.fileKey ?? undefined; // ✅ available with private plugin API
+  const key = getStoredFileKey();
   if (!key || !nodeId) return undefined;
 
   const nodeIdForUrl = nodeIdToUrlFormat(nodeId);
-
-  return `https://www.figma.com/design/${key}/baseline?node-id=${encodeURIComponent(
-    nodeIdForUrl
-  )}`;
+  return `https://www.figma.com/design/${key}/?node-id=${encodeURIComponent(nodeIdForUrl)}`;
 }
 
 function getSelectionContext() {
@@ -76,9 +82,25 @@ function isSceneNode(node: BaseNode): node is SceneNode {
 
 figma.showUI(__html__, { width: 360, height: 520 });
 
+// Send stored file key to UI on launch
+figma.ui.postMessage({ type: "FILE_KEY", fileKey: getStoredFileKey() || "" });
+
 figma.ui.onmessage = (msg) => {
   if (msg.type === "GET_JOURNAL") {
     figma.ui.postMessage({ type: "JOURNAL", entries: getJournal() });
+    return;
+  }
+
+  if (msg.type === "GET_FILE_KEY") {
+    figma.ui.postMessage({ type: "FILE_KEY", fileKey: getStoredFileKey() || "" });
+    return;
+  }
+
+  if (msg.type === "SET_FILE_KEY") {
+    const { fileKey } = msg as { fileKey: string };
+    setStoredFileKey(fileKey);
+    figma.notify("File key saved");
+    figma.ui.postMessage({ type: "FILE_KEY", fileKey });
     return;
   }
 
@@ -111,7 +133,7 @@ figma.ui.onmessage = (msg) => {
     setJournal(next);
 
     figma.ui.postMessage({ type: "JOURNAL", entries: next });
-    figma.notify("Saved to Baseline");
+    figma.notify("Saved to Jot");
     return;
   }
 
@@ -194,7 +216,7 @@ figma.ui.onmessage = (msg) => {
 
 function toMarkdown(entries: JournalEntry[]) {
   const lines: string[] = [];
-  lines.push(`# Baseline — design decision journal`);
+  lines.push(`# Jot — design decision journal`);
   lines.push(`Generated: ${new Date().toISOString()}`);
   lines.push(``);
 
@@ -206,7 +228,6 @@ function toMarkdown(entries: JournalEntry[]) {
 
     lines.push(`## ${e.type} — ${created}${edited}`);
 
-    // Ensure older entries also get a URL on export (if they have nodeId)
     const url = e.nodeUrl ?? buildNodeUrl(e.nodeId);
 
     if (e.nodeName && url) {

@@ -1,9 +1,8 @@
 {
-  "name": "Baseline",
-  "id": "baseline-journal",
+  "name": "Jot",
+  "id": "jot-journal",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "ui.html",
-  "editorType": ["figma"],
-  "enablePrivatePluginApi": true
+  "editorType": ["figma"]
 }

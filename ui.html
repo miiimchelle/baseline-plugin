@@ -32,8 +32,8 @@
       font-size: 12px;
       font-weight: 600;
       color: #52525b;
-      margin-top: 0;              /* ✅ override global button margin */
-      width: 100%;                /* ✅ keep equal width */
+      margin-top: 0;
+      width: 100%;
       transition: background 120ms ease, box-shadow 120ms ease, color 120ms ease;
     }
 
@@ -84,14 +84,49 @@
     .action-btn:hover { background: #f7f7f7; }
 
     .md { width: 100%; height: 140px; margin-top: 8px; display: none; }
+
+    .export-row { display: flex; gap: 8px; margin-top: 8px; }
+    .export-row button { flex: 1; }
+
+    .filter-row { display: flex; gap: 8px; align-items: center; }
+    .filter-row select { flex: 1; height: 28px; margin-top: 0; font-size: 11px; }
+    .filter-label { font-size: 11px; color: #666; white-space: nowrap; }
+
+    .entry-count { font-size: 11px; color: #888; margin-top: 4px; }
+
+    .empty-state { text-align: center; padding: 24px 12px; color: #888; }
+    .empty-state-title { font-size: 13px; font-weight: 600; color: #52525b; margin-bottom: 6px; }
+    .empty-state-text { font-size: 11px; line-height: 1.5; }
+
+    .setup-box {
+      background: #f9f9fb;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .setup-box input {
+      width: 100%;
+      height: 28px;
+      box-sizing: border-box;
+      margin-top: 6px;
+      font-size: 11px;
+      padding: 0 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    .setup-row { display: flex; gap: 8px; margin-top: 6px; }
+    .setup-row button { flex: 1; height: 28px; font-size: 11px; margin-top: 0; }
+    .setup-status { font-size: 11px; color: #22c55e; margin-top: 6px; display: none; }
+    .setup-hint { font-size: 10px; color: #aaa; margin-top: 4px; }
   </style>
 </head>
 <body>
-  <h1>Baseline</h1>
+  <h1>Jot</h1>
   <div class="tagline">Capture design decisions, assumptions, trade-offs, and feedback directly in Figma.</div>
 
   <div class="tabs-root">
-    <div class="tabs-list" role="tablist" aria-label="Baseline tabs">
+    <div class="tabs-list" role="tablist" aria-label="Jot tabs">
       <button
         id="tabWrite"
         class="tabs-trigger"
@@ -111,7 +146,18 @@
         aria-selected="false"
         data-state="inactive"
       >
-        View entries
+        View entries <span id="tabCount"></span>
+      </button>
+
+      <button
+        id="tabSettings"
+        class="tabs-trigger"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        data-state="inactive"
+      >
+        Setup
       </button>
     </div>
   </div>
@@ -140,9 +186,38 @@
 
   <!-- TAB 2: VIEW -->
   <div id="panelView" class="panel">
+    <div class="filter-row">
+      <span class="filter-label">Filter:</span>
+      <select id="filterType">
+        <option value="all">All types</option>
+        <option value="decision">Decision</option>
+        <option value="assumption">Assumption</option>
+        <option value="tradeoff">Trade-off</option>
+        <option value="feedback">Feedback outcome</option>
+        <option value="debt">Design debt</option>
+      </select>
+    </div>
+    <div id="entryCount" class="entry-count"></div>
     <div class="list" id="list"></div>
-    <button id="export">Export Markdown</button>
+    <div class="export-row">
+      <button id="export">Export Markdown</button>
+      <button id="copyMd" style="display:none;">Copy to clipboard</button>
+    </div>
     <textarea id="md" class="md" readonly></textarea>
+  </div>
+
+  <!-- TAB 3: SETUP -->
+  <div id="panelSettings" class="panel">
+    <div class="setup-box">
+      <div class="label" style="margin-top:0;">File link (for Markdown export)</div>
+      <div class="helper">Paste this file's Figma URL so exported entries include clickable links to nodes. Copy it from your browser address bar.</div>
+      <input id="fileUrlInput" type="text" placeholder="https://www.figma.com/design/ABC123/..." />
+      <div class="setup-row">
+        <button id="saveFileKey">Save</button>
+      </div>
+      <div id="setupStatus" class="setup-status">File key saved.</div>
+      <div class="setup-hint">This is stored per file. You only need to set it once.</div>
+    </div>
   </div>
 
   <script>
@@ -150,13 +225,13 @@
 
     let editingId = null;
     let currentEntries = [];
+    let storedFileKey = "";
 
     function setError(msg) {
       $("error").textContent = msg || "";
       requestResize();
     }
 
-    // Option B: auto-resize based on content height
     function requestResize() {
       const padding = 24;
       const maxHeight = 720;
@@ -174,21 +249,28 @@
     }
 
     function setTab(tab) {
-      const isWrite = tab === "write";
+      const tabs = ["Write", "View", "Settings"];
+      for (const t of tabs) {
+        const isActive = t.toLowerCase() === tab;
+        const btn = $("tab" + t);
+        const panel = $("panel" + t);
+        if (btn) {
+          btn.dataset.state = isActive ? "active" : "inactive";
+          btn.setAttribute("aria-selected", String(isActive));
+        }
+        if (panel) {
+          panel.classList.toggle("active", isActive);
+        }
+      }
 
-      $("tabWrite").dataset.state = isWrite ? "active" : "inactive";
-      $("tabView").dataset.state = isWrite ? "inactive" : "active";
-
-      $("tabWrite").setAttribute("aria-selected", String(isWrite));
-      $("tabView").setAttribute("aria-selected", String(!isWrite));
-
-      $("panelWrite").classList.toggle("active", isWrite);
-      $("panelView").classList.toggle("active", !isWrite);
-
-      // when opening View tab, refresh list (v0 behaviour)
-      if (!isWrite) {
+      if (tab === "view") {
         $("md").style.display = "none";
+        $("copyMd").style.display = "none";
         parent.postMessage({ pluginMessage: { type: "GET_JOURNAL" } }, "*");
+      }
+
+      if (tab === "settings") {
+        parent.postMessage({ pluginMessage: { type: "GET_FILE_KEY" } }, "*");
       }
 
       requestResize();
@@ -196,6 +278,46 @@
 
     $("tabWrite").onclick = () => setTab("write");
     $("tabView").onclick = () => setTab("view");
+    $("tabSettings").onclick = () => setTab("settings");
+
+    // --- File key setup ---
+    function extractFileKey(input) {
+      const trimmed = input.trim();
+      // Match figma.com/design/FILEKEY/... or figma.com/file/FILEKEY/...
+      const match = trimmed.match(/figma\.com\/(?:design|file)\/([A-Za-z0-9]+)/);
+      if (match) return match[1];
+      // If it looks like a raw key (alphanumeric, 20+ chars), accept it
+      if (/^[A-Za-z0-9]{10,}$/.test(trimmed)) return trimmed;
+      return null;
+    }
+
+    $("saveFileKey").onclick = () => {
+      const raw = $("fileUrlInput").value;
+      const key = extractFileKey(raw);
+      if (!key) {
+        setError("Could not find a file key. Paste the full Figma URL from your browser.");
+        return;
+      }
+      setError("");
+      parent.postMessage({ pluginMessage: { type: "SET_FILE_KEY", fileKey: key } }, "*");
+    };
+
+    // --- Filter ---
+    $("filterType").onchange = () => {
+      render(currentEntries);
+    };
+
+    function getFilteredEntries(entries) {
+      const filter = $("filterType").value;
+      if (filter === "all") return entries;
+      return entries.filter((e) => e.type === filter);
+    }
+
+    // --- Tab count ---
+    function updateTabCount(entries) {
+      const count = entries.length;
+      $("tabCount").textContent = count > 0 ? `(${count})` : "";
+    }
 
     function enterEditMode(entry) {
       editingId = entry.id;
@@ -205,7 +327,6 @@
       $("cancelEdit").style.display = "block";
       $("note").focus();
 
-      // Editing lives in Write tab
       setTab("write");
       requestResize();
     }
@@ -219,19 +340,43 @@
 
     function render(entries) {
       currentEntries = entries || [];
+      updateTabCount(currentEntries);
+
+      const filtered = getFilteredEntries(currentEntries);
       const list = $("list");
       list.innerHTML = "";
 
+      // Entry count
+      const countText = $("filterType").value === "all"
+        ? `${currentEntries.length} ${currentEntries.length === 1 ? "entry" : "entries"}`
+        : `${filtered.length} of ${currentEntries.length} entries`;
+      $("entryCount").textContent = currentEntries.length > 0 ? countText : "";
+
       if (!currentEntries.length) {
         const empty = document.createElement("div");
-        empty.className = "meta";
-        empty.textContent = "No entries yet.";
+        empty.className = "empty-state";
+        empty.innerHTML = `
+          <div class="empty-state-title">No entries yet</div>
+          <div class="empty-state-text">
+            Select a frame or layer in Figma, switch to the<br>
+            <strong>Write entry</strong> tab, and capture your first decision.
+          </div>
+        `;
         list.appendChild(empty);
         requestResize();
         return;
       }
 
-      for (const e of currentEntries) {
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.innerHTML = `<div class="empty-state-text">No entries match this filter.</div>`;
+        list.appendChild(empty);
+        requestResize();
+        return;
+      }
+
+      for (const e of filtered) {
         const clickable = !!e.nodeId;
 
         const item = document.createElement("div");
@@ -325,6 +470,14 @@
       parent.postMessage({ pluginMessage: { type: "EXPORT_MD" } }, "*");
     };
 
+    $("copyMd").onclick = () => {
+      const md = $("md");
+      md.select();
+      document.execCommand("copy");
+      $("copyMd").textContent = "Copied!";
+      setTimeout(() => { $("copyMd").textContent = "Copy to clipboard"; }, 1500);
+    };
+
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
@@ -334,10 +487,24 @@
         return;
       }
 
+      if (msg.type === "FILE_KEY") {
+        storedFileKey = msg.fileKey || "";
+        if (storedFileKey) {
+          $("fileUrlInput").value = storedFileKey;
+          $("setupStatus").style.display = "block";
+          $("setupStatus").textContent = "File key saved: " + storedFileKey;
+        } else {
+          $("setupStatus").style.display = "none";
+        }
+        requestResize();
+        return;
+      }
+
       if (msg.type === "JOURNAL") {
         exitEditMode();
         $("note").value = "";
         $("md").style.display = "none";
+        $("copyMd").style.display = "none";
         render(msg.entries);
         return;
       }
@@ -345,6 +512,7 @@
       if (msg.type === "EXPORT_MD_RESULT") {
         $("md").value = msg.markdown;
         $("md").style.display = "block";
+        $("copyMd").style.display = "block";
         requestResize();
         return;
       }
