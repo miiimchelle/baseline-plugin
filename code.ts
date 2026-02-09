@@ -10,6 +10,9 @@ import {
 
 figma.notify("Jot v2.0.0 ready");
 
+const post = (msg: object) => figma.ui.postMessage(msg);
+const err = (message: string) => post({ type: "ERROR", message });
+
 function getJournal(): JournalEntry[] {
   return parseJournal(figma.root.getPluginData(STORAGE_KEY));
 }
@@ -18,23 +21,30 @@ function setJournal(entries: JournalEntry[]) {
   figma.root.setPluginData(STORAGE_KEY, JSON.stringify(entries));
 }
 
-function getStoredFileKey(): string | undefined {
-  const val = figma.root.getPluginData(FILE_KEY_STORAGE);
-  return val || undefined;
+function fileKey(): string | undefined {
+  return figma.root.getPluginData(FILE_KEY_STORAGE) || undefined;
 }
 
-function setStoredFileKey(key: string) {
-  figma.root.setPluginData(FILE_KEY_STORAGE, key);
+function sendFileKey() {
+  post({ type: "FILE_KEY", fileKey: fileKey() || "" });
 }
 
-function getSelectionContext() {
+function sendJournal(entries: JournalEntry[]) {
+  post({ type: "JOURNAL", entries });
+}
+
+function cleanNote(raw: unknown): string | null {
+  const trimmed = String(raw ?? "").trim();
+  return trimmed || null;
+}
+
+function selectionContext() {
   const node = figma.currentPage.selection[0];
   const nodeId = node?.id;
-
   return {
     nodeId,
     nodeName: node?.name,
-    nodeUrl: buildNodeUrl(getStoredFileKey(), nodeId),
+    nodeUrl: buildNodeUrl(fileKey(), nodeId),
     pageId: figma.currentPage.id,
     pageName: figma.currentPage.name
   };
@@ -42,10 +52,8 @@ function getSelectionContext() {
 
 function getPageForNode(node: BaseNode): PageNode | null {
   let current: BaseNode | null = node;
-  while (current && current.type !== "PAGE") {
-    current = current.parent;
-  }
-  return current && current.type === "PAGE" ? (current as PageNode) : null;
+  while (current && current.type !== "PAGE") current = current.parent;
+  return current as PageNode | null;
 }
 
 function isSceneNode(node: BaseNode): node is SceneNode {
@@ -53,117 +61,85 @@ function isSceneNode(node: BaseNode): node is SceneNode {
 }
 
 figma.showUI(__html__, { width: 360, height: 520 });
-
-// Send stored file key to UI on launch
-figma.ui.postMessage({ type: "FILE_KEY", fileKey: getStoredFileKey() || "" });
+sendFileKey();
 
 figma.ui.onmessage = (msg) => {
   if (msg.type === "GET_JOURNAL") {
-    figma.ui.postMessage({ type: "JOURNAL", entries: getJournal() });
+    sendJournal(getJournal());
     return;
   }
 
   if (msg.type === "GET_FILE_KEY") {
-    figma.ui.postMessage({ type: "FILE_KEY", fileKey: getStoredFileKey() || "" });
+    sendFileKey();
     return;
   }
 
   if (msg.type === "SET_FILE_KEY") {
-    const { fileKey } = msg as { fileKey: string };
-    setStoredFileKey(fileKey);
+    figma.root.setPluginData(FILE_KEY_STORAGE, msg.fileKey);
     figma.notify("File key saved");
-    figma.ui.postMessage({ type: "FILE_KEY", fileKey });
+    post({ type: "FILE_KEY", fileKey: msg.fileKey });
     return;
   }
 
   if (msg.type === "RESIZE") {
-    const { width, height } = msg as { width: number; height: number };
-    figma.ui.resize(width, height);
+    figma.ui.resize(msg.width, msg.height);
     return;
   }
 
   if (msg.type === "ADD_ENTRY") {
-    const { entryType, note } = msg as { entryType: EntryType; note: string };
-
-    const cleanNote = String(note ?? "").trim();
-    if (!cleanNote) {
-      figma.ui.postMessage({ type: "ERROR", message: "Write a note first." });
-      return;
-    }
-
-    const ctx = getSelectionContext();
+    const note = cleanNote(msg.note);
+    if (!note) { err("Write a note first."); return; }
 
     const entry: JournalEntry = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       createdAt: new Date().toISOString(),
-      type: entryType,
-      note: cleanNote,
-      ...ctx
+      type: msg.entryType as EntryType,
+      note,
+      ...selectionContext()
     };
 
     const next = [entry, ...getJournal()];
     setJournal(next);
-
-    figma.ui.postMessage({ type: "JOURNAL", entries: next });
+    sendJournal(next);
     figma.notify("Saved to Jot");
     return;
   }
 
   if (msg.type === "UPDATE_ENTRY") {
-    const { id, entryType, note } = msg as {
-      id: string;
-      entryType: EntryType;
-      note: string;
-    };
-
-    const cleanNote = String(note ?? "").trim();
-    if (!cleanNote) {
-      figma.ui.postMessage({ type: "ERROR", message: "Write a note first." });
-      return;
-    }
+    const note = cleanNote(msg.note);
+    if (!note) { err("Write a note first."); return; }
 
     const entries = getJournal();
-    const idx = entries.findIndex((e) => e.id === id);
-
-    if (idx === -1) {
-      figma.ui.postMessage({ type: "ERROR", message: "Entry not found." });
-      return;
-    }
+    const idx = entries.findIndex((e) => e.id === msg.id);
+    if (idx === -1) { err("Entry not found."); return; }
 
     entries[idx] = {
       ...entries[idx],
-      type: entryType,
-      note: cleanNote,
+      type: msg.entryType as EntryType,
+      note,
       updatedAt: new Date().toISOString()
     };
 
     setJournal(entries);
-    figma.ui.postMessage({ type: "JOURNAL", entries });
+    sendJournal(entries);
     figma.notify("Updated entry");
     return;
   }
 
   if (msg.type === "DELETE_ENTRY") {
-    const { id } = msg as { id: string };
-
-    const next = getJournal().filter((e) => e.id !== id);
+    const next = getJournal().filter((e) => e.id !== msg.id);
     setJournal(next);
-
-    figma.ui.postMessage({ type: "JOURNAL", entries: next });
+    sendJournal(next);
     figma.notify("Deleted entry");
     return;
   }
 
   if (msg.type === "GO_TO_ENTRY") {
-    const nodeId = msg.nodeId as string | undefined;
-    if (!nodeId) return;
+    if (!msg.nodeId) return;
 
-    const node = figma.getNodeById(nodeId);
+    const node = figma.getNodeById(msg.nodeId);
     if (!node || node.removed) {
-      figma.ui.postMessage({
-        type: "ERROR",
-        message: "Linked layer/frame no longer exists."
-      });
+      err("Linked layer/frame no longer exists.");
       return;
     }
 
@@ -178,10 +154,7 @@ figma.ui.onmessage = (msg) => {
   }
 
   if (msg.type === "EXPORT_MD") {
-    figma.ui.postMessage({
-      type: "EXPORT_MD_RESULT",
-      markdown: toMarkdown(getJournal(), getStoredFileKey())
-    });
+    post({ type: "EXPORT_MD_RESULT", markdown: toMarkdown(getJournal(), fileKey()) });
     return;
   }
 };

@@ -1,125 +1,75 @@
-# How to use
+# Jot
 
-As I have no published this plugin yet, you'll need to manually upload the plugin in Figma's plugin (development).
+**Jot** is a lightweight design decision journal for Figma.
 
-After pulling or switching branches, run:
-
-npm run build
-
-or keep the compiler running with:
-
-npm run watch
-
-# Baseline
-
-**Baseline** is a lightweight design decision journal for Figma.
-
-It helps designers capture the *why* behind decisions, while context is still fresh, so they don’t have to keep re-explaining, re-justifying, or re-litigating work later.
+It helps designers capture the *why* behind decisions, while context is still fresh.
 
 > Align on why, not just what.
 
 ---
 
-## Why Baseline exists
+## How it works
 
-Baseline exists because I have ADHD, a busy brain, and a strong grasp on reality.
+1. Select a layer or frame in Figma
+2. Choose a type (decision, assumption, trade-off, feedback, or design debt)
+3. Write a short note explaining the rationale
+4. Save it
 
-In fast-moving teams, design decisions have a funny way of being “remembered differently” over time. Context gets lost. Rationales fade. Stakeholders revisit choices as if they were never discussed. And designers are left defending decisions they already explained (sometimes multiple times).
+Each entry is linked to the layer it relates to. Click an entry to jump back to that context. Entries can be edited or deleted as thinking evolves.
 
-Baseline is a calm, low-friction way to capture design rationale at the moment it’s made, so future conversations are grounded in facts.
-
----
-
-## What Baseline is
-
-- A **journal**, not a documentation system
-- A place to capture **decisions, assumptions, trade-offs, feedback outcomes, and design debt**
-- A way to anchor thinking to the actual design work in Figma
-- Something you can open, write in, and close without ceremony
-
-Baseline is intentionally small. If it feels easy to use, it’s doing its job.
+Export everything to Markdown when you need to share context outside Figma.
 
 ---
 
-## What Baseline is not
+## Setup
+
+### Development
+
+```
+npm install
+npm run build
+```
+
+Or keep the compiler running:
+
+```
+npm run watch
+```
+
+Then load the plugin in Figma via **Plugins > Development > Import plugin from manifest**.
+
+### File linking (optional)
+
+In the **Setup** tab, paste your Figma file URL to enable clickable deep links in Markdown exports. This is stored per file — you only need to do it once.
+
+### Tests
+
+```
+npm test
+```
+
+---
+
+## What Jot is not
 
 - A task tracker
 - A design spec
 - A comments replacement
-- A governance tool
-- A source of truth for “who approved what”
 
-Baseline won’t manage your process.  
-It just remembers what happened.
+Jot won't manage your process. It just remembers what happened.
 
 ---
 
-## How it works
+## Security & privacy
 
-1. Select a layer or frame in Figma  
-2. Add an entry and choose a type (decision, assumption, trade-off, etc.)
-3. Write a short note explaining the rationale
-4. Save it
+- All entries are stored using Figma's plugin data API — they live inside the Figma file
+- No data is sent to external services
+- No network requests are made
 
-Each entry:
-- is linked to the layer or frame it relates to
-- can be clicked to jump back to that context later
-- can be edited as thinking evolves
-- can be deleted if it’s no longer relevant
-
-When you need to share context outside Figma, you can export everything to Markdown, maybe put it in a Loop component.
-
----
-
-## Exporting
-
-Baseline supports exporting all entries as Markdown, making it easy to:
-- paste into Notion or Google Docs
-- drop into a design review or PR
-- keep a lightweight audit trail of decisions
-
----
-
-## Design principles
-
-Baseline is guided by a few simple rules:
-
-- **Low cognitive load**  
-  If it takes effort to write, it won’t get written.
-
-- **Context over completeness**  
-  Short, honest notes beat perfect documentation.
-
-- **Human first**  
-  This tool is for designers working with other humans, not for process theatre.
-
----
-
-## Status
-
-Baseline is intentionally scoped as a **v1**.
-
-It does a small number of things well and avoids feature creep by design. We are starting simple.
-
-## Security & privacy considerations
-
-Baseline is intentionally designed to be low-risk.
-
-- All entries are stored using Figma’s plugin data API and live **inside the Figma file**.
-- No data is sent to external services.
-- No network requests are made.
-- No authentication, secrets, or credentials are handled by the plugin.
-
-Anyone with **edit access** to the Figma file can view, edit, or delete Baseline entries. As such, Baseline should be treated as a **working design journal**, not an immutable audit log or governance record.
-
-When exporting entries to Markdown, content may leave Figma’s access controls. Users should take care not to include sensitive, personal, or confidential information.
-
-Baseline is designed to preserve context and rationale.
+Anyone with edit access to the file can view, edit, or delete entries. Treat Jot as a working design journal, not an audit log.
 
 ---
 
 ## Author
 
-Built by Michelle, a product designer, and someone who got tired of design decisions being quietly rewritten.
-
-
+Built by Michelle, a product designer who got tired of design decisions being quietly rewritten.
