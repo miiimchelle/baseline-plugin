@@ -9,7 +9,7 @@
     .tagline { color: #666; margin-bottom: 12px; }
 
     /* Shadcn-style tabs */
-    .tabs-root { margin-bottom: 12px; }
+    .tabs-root { margin-bottom: 24px; }
 
     .tabs-list {
       display: inline-flex;
@@ -48,9 +48,9 @@
       outline-offset: 2px;
     }
 
-    .panel { display: none; }
-    .panel.active { display: block; }
-
+    .panel { display: none; max-height: fit-content; margin-bottom: 24px; }
+    .panel.active { display: block; max-height: fit-content; margin-bottom: 24px; }
+    
     select, button { width: 100%; height: 32px; margin-top: 8px; box-sizing: border-box; }
     textarea { width: 100%; height: 90px; resize: vertical; margin-top: 10px; box-sizing: border-box; }
 
@@ -99,7 +99,7 @@
         role="tab"
         aria-selected="true"
         data-state="active"
-      >
+>
         Write entry
       </button>
 
@@ -120,7 +120,7 @@
 
   <!-- TAB 1: WRITE -->
   <div id="panelWrite" class="panel active">
-    <div class="label">Entry type</div>
+    <div class="label" > <strong>Entry type</strong></div>
     <div class="helper">What kind of thinking are you capturing?</div>
     <select id="type">
       <option value="decision">Decision</option>
@@ -130,7 +130,7 @@
       <option value="debt">Design debt</option>
     </select>
 
-    <div class="label">Decision note</div>
+    <div class="label"><strong>Decision note</strong></div>
     <div class="helper">Capture the why, trade-offs, or context behind this decision.</div>
     <textarea id="note" placeholder="e.g. We chose X over Y because…"></textarea>
 
