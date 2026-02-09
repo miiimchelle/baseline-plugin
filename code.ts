@@ -1,33 +1,17 @@
+import {
+  EntryType,
+  JournalEntry,
+  STORAGE_KEY,
+  FILE_KEY_STORAGE,
+  parseJournal,
+  buildNodeUrl,
+  toMarkdown
+} from "./logic";
+
 figma.notify("Jot v2.0.0 ready");
 
-type EntryType = "decision" | "assumption" | "tradeoff" | "feedback" | "debt";
-
-type JournalEntry = {
-  id: string;
-  createdAt: string;
-  updatedAt?: string;
-  type: EntryType;
-  note: string;
-
-  nodeId?: string;
-  nodeName?: string;
-  nodeUrl?: string;
-
-  pageId?: string;
-  pageName?: string;
-};
-
-const STORAGE_KEY = "jot.journal.v1";
-const FILE_KEY_STORAGE = "jot.filekey.v1";
-
 function getJournal(): JournalEntry[] {
-  const raw = figma.root.getPluginData(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as JournalEntry[];
-  } catch {
-    return [];
-  }
+  return parseJournal(figma.root.getPluginData(STORAGE_KEY));
 }
 
 function setJournal(entries: JournalEntry[]) {
@@ -43,18 +27,6 @@ function setStoredFileKey(key: string) {
   figma.root.setPluginData(FILE_KEY_STORAGE, key);
 }
 
-function nodeIdToUrlFormat(nodeId: string) {
-  return nodeId.replace(/:/g, "-");
-}
-
-function buildNodeUrl(nodeId?: string) {
-  const key = getStoredFileKey();
-  if (!key || !nodeId) return undefined;
-
-  const nodeIdForUrl = nodeIdToUrlFormat(nodeId);
-  return `https://www.figma.com/design/${key}/?node-id=${encodeURIComponent(nodeIdForUrl)}`;
-}
-
 function getSelectionContext() {
   const node = figma.currentPage.selection[0];
   const nodeId = node?.id;
@@ -62,7 +34,7 @@ function getSelectionContext() {
   return {
     nodeId,
     nodeName: node?.name,
-    nodeUrl: buildNodeUrl(nodeId),
+    nodeUrl: buildNodeUrl(getStoredFileKey(), nodeId),
     pageId: figma.currentPage.id,
     pageName: figma.currentPage.name
   };
@@ -208,39 +180,8 @@ figma.ui.onmessage = (msg) => {
   if (msg.type === "EXPORT_MD") {
     figma.ui.postMessage({
       type: "EXPORT_MD_RESULT",
-      markdown: toMarkdown(getJournal())
+      markdown: toMarkdown(getJournal(), getStoredFileKey())
     });
     return;
   }
 };
-
-function toMarkdown(entries: JournalEntry[]) {
-  const lines: string[] = [];
-  lines.push(`# Jot — design decision journal`);
-  lines.push(`Generated: ${new Date().toISOString()}`);
-  lines.push(``);
-
-  for (const e of entries) {
-    const created = new Date(e.createdAt).toLocaleString();
-    const edited = e.updatedAt
-      ? ` (edited ${new Date(e.updatedAt).toLocaleString()})`
-      : ``;
-
-    lines.push(`## ${e.type} — ${created}${edited}`);
-
-    const url = e.nodeUrl ?? buildNodeUrl(e.nodeId);
-
-    if (e.nodeName && url) {
-      lines.push(`Linked layer/frame: [${e.nodeName}](${url})`);
-      lines.push(``);
-    } else if (e.nodeName) {
-      lines.push(`Linked layer/frame: ${e.nodeName}`);
-      lines.push(``);
-    }
-
-    lines.push(e.note);
-    lines.push(``);
-  }
-
-  return lines.join("\n");
-}

@@ -11,5 +11,5 @@
     "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
     "skipLibCheck": true
   },
-  "include": ["code.ts"]
+  "include": ["code.ts", "logic.ts"]
 }
