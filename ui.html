@@ -8,9 +8,9 @@
       g.module = m;
       g.exports = e;
     })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
-    // #region agent log
-    (function(){try{fetch("http://127.0.0.1:7245/ingest/00887538-2b13-4cd7-a4df-0a512f249c00",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"ui.html:head-first",message:"early_script_ran",data:{},timestamp:Date.now(),hypothesisId:"H1"})}).catch(function(){});}catch(e){}}());
-    // #endregion
+    var __g = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this;
+    var exports = __g.exports;
+    var module = __g.module;
   </script>
   <meta charset="utf-8" />
   <style>
@@ -169,13 +169,10 @@
   </div>
 
   <script>
-    // Polyfill for Figma plugin UI: vendor-core expects CommonJS "exports" in this context.
-    (function (g) { if (typeof g.exports === "undefined") g.exports = {}; })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
-    // #region agent log
-    try {
-      fetch("http://127.0.0.1:7245/ingest/00887538-2b13-4cd7-a4df-0a512f249c00", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ location: "ui.html:script", message: "script_start", data: { exportsDefined: (typeof globalThis !== "undefined" ? globalThis : window).exports !== undefined }, timestamp: Date.now(), hypothesisId: "H1", runId: "post-fix" }) }).catch(function() {});
-    } catch (e) {}
-    // #endregion
+    (function(g){ var m = (g.module !== undefined) ? g.module : { exports: {} }; var e = (g.exports !== undefined) ? g.exports : m.exports; g.module = m; g.exports = e; })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
+    var __g = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this;
+    var exports = __g.exports;
+    var module = __g.module;
     const $ = (id) => document.getElementById(id);
     const send = (msg) => parent.postMessage({ pluginMessage: msg }, "*");
 
@@ -353,11 +350,6 @@
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
-      // #region agent log
-      try {
-        fetch("http://127.0.0.1:7245/ingest/00887538-2b13-4cd7-a4df-0a512f249c00", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ location: "ui.html:onmessage", message: "message_received", data: { type: msg.type }, timestamp: Date.now(), hypothesisId: "H4" }) }).catch(function() {});
-      } catch (e) {}
-      // #endregion
 
       if (msg.type === "ERROR") { setError(msg.message); return; }
 
@@ -389,17 +381,7 @@
     };
 
     window.onload = () => {
-      // #region agent log
-      try {
-        fetch("http://127.0.0.1:7245/ingest/00887538-2b13-4cd7-a4df-0a512f249c00", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ location: "ui.html:onload", message: "onload_fired", data: {}, timestamp: Date.now(), hypothesisId: "H2" }) }).catch(function() {});
-      } catch (e) {}
-      // #endregion
       requestResize();
-      // #region agent log
-      try {
-        fetch("http://127.0.0.1:7245/ingest/00887538-2b13-4cd7-a4df-0a512f249c00", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ location: "ui.html:onload", message: "sending_get_journal", data: {}, timestamp: Date.now(), hypothesisId: "H3" }) }).catch(function() {});
-      } catch (e) {}
-      // #endregion
       send({ type: "GET_JOURNAL" });
     };
   </script>
