@@ -1,17 +1,6 @@
 <!doctype html>
 <html>
 <head>
-  <script>
-    (function(g){
-      var m = (g.module !== undefined) ? g.module : { exports: {} };
-      var e = (g.exports !== undefined) ? g.exports : m.exports;
-      g.module = m;
-      g.exports = e;
-    })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
-    var __g = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this;
-    var exports = __g.exports;
-    var module = __g.module;
-  </script>
   <meta charset="utf-8" />
   <style>
     body { font: 12px/1.4 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 16px; }
@@ -180,10 +169,6 @@
   </div>
 
   <script>
-    (function(g){ var m = (g.module !== undefined) ? g.module : { exports: {} }; var e = (g.exports !== undefined) ? g.exports : m.exports; g.module = m; g.exports = e; })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
-    var __g = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this;
-    var exports = __g.exports;
-    var module = __g.module;
     const $ = (id) => document.getElementById(id);
     const send = (msg) => parent.postMessage({ pluginMessage: msg }, "*");
 
