@@ -8,6 +8,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
     "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix .",
+    "dev": "esbuild code.ts --bundle --outfile=dist/code.js --format=iife --target=es2017 --watch",
     "watch": "esbuild code.ts --bundle --outfile=dist/code.js --format=iife --target=es2017 --watch",
     "test": "vitest run",
     "test:watch": "vitest"
