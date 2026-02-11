@@ -80,3 +80,12 @@ export function filterEntries(entries: JournalEntry[], filterType: string): Jour
   if (filterType === "all") return entries;
   return entries.filter((e) => e.type === filterType);
 }
+
+export function cleanNote(raw: unknown): string | null {
+  const trimmed = String(raw ?? "").trim();
+  return trimmed || null;
+}
+
+export function generateEntryId(): string {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}

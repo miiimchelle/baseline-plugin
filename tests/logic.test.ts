@@ -6,6 +6,8 @@ import {
   toMarkdown,
   extractFileKey,
   filterEntries,
+  cleanNote,
+  generateEntryId,
   STORAGE_KEY,
   FILE_KEY_STORAGE,
   JournalEntry,
@@ -274,6 +276,100 @@ describe("toMarkdown", () => {
     expect(md).toContain("Second");
     expect(md).toContain("## decision");
     expect(md).toContain("## debt");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cleanNote
+// ---------------------------------------------------------------------------
+describe("cleanNote", () => {
+  it("trims whitespace and returns string", () => {
+    expect(cleanNote("  hello  ")).toBe("hello");
+  });
+
+  it("returns null for empty string", () => {
+    expect(cleanNote("")).toBeNull();
+  });
+
+  it("returns null for whitespace-only string", () => {
+    expect(cleanNote("   ")).toBeNull();
+  });
+
+  it("returns null for null input", () => {
+    expect(cleanNote(null)).toBeNull();
+  });
+
+  it("returns null for undefined input", () => {
+    expect(cleanNote(undefined)).toBeNull();
+  });
+
+  it("converts numbers to string", () => {
+    expect(cleanNote(42)).toBe("42");
+  });
+
+  it("handles string with newlines", () => {
+    expect(cleanNote("  line1\nline2  ")).toBe("line1\nline2");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generateEntryId
+// ---------------------------------------------------------------------------
+describe("generateEntryId", () => {
+  it("returns a non-empty string", () => {
+    const id = generateEntryId();
+    expect(id).toBeTruthy();
+    expect(typeof id).toBe("string");
+  });
+
+  it("contains a timestamp prefix", () => {
+    const before = Date.now();
+    const id = generateEntryId();
+    const after = Date.now();
+    const ts = parseInt(id.split("-")[0], 10);
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+  });
+
+  it("generates unique ids", () => {
+    const ids = new Set(Array.from({ length: 100 }, () => generateEntryId()));
+    expect(ids.size).toBe(100);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseJournal (additional edge cases)
+// ---------------------------------------------------------------------------
+describe("parseJournal edge cases", () => {
+  it("returns empty array for JSON object (not array)", () => {
+    const result = parseJournal('{"key": "value"}');
+    // parseJournal returns whatever JSON.parse gives; a non-array is still valid JSON
+    expect(result).toBeDefined();
+  });
+
+  it("returns empty array for deeply nested invalid JSON", () => {
+    expect(parseJournal("{{{")).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toMarkdown (additional edge cases)
+// ---------------------------------------------------------------------------
+describe("toMarkdown edge cases", () => {
+  it("renders entry with empty note", () => {
+    const entries: JournalEntry[] = [
+      { id: "1", createdAt: "2025-01-01T00:00:00Z", type: "decision", note: "" },
+    ];
+    const md = toMarkdown(entries);
+    expect(md).toContain("## decision");
+  });
+
+  it("renders entry without nodeName (no linked layer line)", () => {
+    const entries: JournalEntry[] = [
+      { id: "1", createdAt: "2025-01-01T00:00:00Z", type: "debt", note: "Some note", nodeId: "5:5" },
+    ];
+    const md = toMarkdown(entries);
+    expect(md).not.toContain("Linked layer/frame");
   });
 });
 

@@ -107,7 +107,18 @@
         aria-selected="false"
         data-state="inactive"
       >
-        View entries
+        View entries <span id="tabCount"></span>
+      </button>
+
+      <button
+        id="tabSettings"
+        class="tabs-trigger"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        data-state="inactive"
+      >
+        Setup
       </button>
     </div>
   </div>
@@ -214,8 +225,7 @@
 
     $("tabWrite").onclick = () => setTab("write");
     $("tabView").onclick = () => setTab("view");
-    var tabSettingsEl = $("tabSettings");
-    if (tabSettingsEl) tabSettingsEl.onclick = () => setTab("settings");
+    $("tabSettings").onclick = () => setTab("settings");
 
     // --- File key ---
     function extractFileKey(input) {

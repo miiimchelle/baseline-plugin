@@ -531,6 +531,102 @@ describe("UI", () => {
   });
 
   // -----------------------------------------------------------------------
+  // RESIZE on tab switch
+  // -----------------------------------------------------------------------
+  describe("RESIZE on tab switch", () => {
+    it("sends RESIZE when switching to View tab", () => {
+      messages.length = 0;
+      (doc.getElementById("tabView") as HTMLElement).click();
+
+      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
+      expect(resizeMsg).toBeDefined();
+    });
+
+    it("sends RESIZE when switching to Setup tab", () => {
+      messages.length = 0;
+      (doc.getElementById("tabSettings") as HTMLElement).click();
+
+      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
+      expect(resizeMsg).toBeDefined();
+    });
+
+    it("sends RESIZE when switching back to Write tab", () => {
+      (doc.getElementById("tabView") as HTMLElement).click();
+      messages.length = 0;
+      (doc.getElementById("tabWrite") as HTMLElement).click();
+
+      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
+      expect(resizeMsg).toBeDefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Error clear on successful action
+  // -----------------------------------------------------------------------
+  describe("Error clear on actions", () => {
+    it("clears error when save is clicked", () => {
+      // Set an error first
+      simulatePluginMessage(win, { type: "ERROR", message: "Some error" });
+      expect((doc.getElementById("error") as HTMLElement).textContent).toBe("Some error");
+
+      // Click save (should clear the error via setError(""))
+      const note = doc.getElementById("note") as HTMLTextAreaElement;
+      note.value = "A note";
+      (doc.getElementById("save") as HTMLElement).click();
+
+      const error = doc.getElementById("error") as HTMLElement;
+      expect(error.textContent).toBe("");
+    });
+
+    it("clears error when export is clicked", () => {
+      simulatePluginMessage(win, { type: "ERROR", message: "Some error" });
+
+      (doc.getElementById("export") as HTMLElement).click();
+
+      const error = doc.getElementById("error") as HTMLElement;
+      expect(error.textContent).toBe("");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // GO_TO_ENTRY from view
+  // -----------------------------------------------------------------------
+  describe("Go to entry", () => {
+    it("sends GO_TO_ENTRY when clicking a linked entry", () => {
+      simulatePluginMessage(win, {
+        type: "JOURNAL",
+        entries: [
+          { id: "1", createdAt: "2025-01-01", type: "decision", note: "Test", nodeId: "10:20", pageName: "Page", nodeName: "Frame" },
+        ],
+      });
+
+      messages.length = 0;
+      const item = doc.querySelector(".item.clickable") as HTMLElement;
+      item.click();
+
+      const goMsg = messages.find((m) => m.type === "GO_TO_ENTRY");
+      expect(goMsg).toBeDefined();
+      expect(goMsg.nodeId).toBe("10:20");
+    });
+
+    it("does not send GO_TO_ENTRY for unlinked entry", () => {
+      simulatePluginMessage(win, {
+        type: "JOURNAL",
+        entries: [
+          { id: "1", createdAt: "2025-01-01", type: "decision", note: "No link" },
+        ],
+      });
+
+      messages.length = 0;
+      const item = doc.querySelector(".item") as HTMLElement;
+      item.click();
+
+      const goMsg = messages.find((m) => m.type === "GO_TO_ENTRY");
+      expect(goMsg).toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // Initialization
   // -----------------------------------------------------------------------
   describe("Initialization", () => {
