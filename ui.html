@@ -8,7 +8,9 @@
     h1 { font-size: 14px; margin: 0 0 8px; }
     .tagline { color: #666; margin-bottom: 12px; }
 
-    .tabs-root { margin-bottom: 12px; }
+    /* Shadcn-style tabs */
+    .tabs-root { margin-bottom: 24px; }
+
     .tabs-list {
       display: inline-flex; width: 100%; align-items: center; justify-content: space-between;
       border-radius: 10px; padding: 4px; background: #f4f4f5; box-sizing: border-box;
@@ -22,9 +24,9 @@
     .tabs-trigger[data-state="active"] { background: #fff; color: #09090b; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
     .tabs-trigger:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
 
-    .panel { display: none; }
-    .panel.active { display: block; }
-
+    .panel { display: none; max-height: fit-content; margin-bottom: 24px; }
+    .panel.active { display: block; max-height: fit-content; margin-bottom: 24px; }
+    
     select, button { width: 100%; height: 32px; margin-top: 8px; box-sizing: border-box; }
     textarea { width: 100%; height: 90px; resize: vertical; margin-top: 10px; box-sizing: border-box; }
 
@@ -74,10 +76,28 @@
   <div class="tagline">Capture design decisions, assumptions, trade-offs, and feedback directly in Figma.</div>
 
   <div class="tabs-root">
-    <div class="tabs-list" role="tablist" aria-label="Jot tabs">
-      <button id="tabWrite" class="tabs-trigger" type="button" role="tab" aria-selected="true" data-state="active">Write entry</button>
-      <button id="tabView" class="tabs-trigger" type="button" role="tab" aria-selected="false" data-state="inactive">View entries <span id="tabCount"></span></button>
-      <button id="tabSettings" class="tabs-trigger" type="button" role="tab" aria-selected="false" data-state="inactive">Setup</button>
+    <div class="tabs-list" role="tablist" aria-label="Baseline tabs">
+      <button
+        id="tabWrite"
+        class="tabs-trigger"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        data-state="active"
+>
+        Write entry
+      </button>
+
+      <button
+        id="tabView"
+        class="tabs-trigger"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        data-state="inactive"
+      >
+        View entries
+      </button>
     </div>
   </div>
 
@@ -85,7 +105,7 @@
 
   <!-- WRITE -->
   <div id="panelWrite" class="panel active">
-    <div class="label">Entry type</div>
+    <div class="label" > <strong>Entry type</strong></div>
     <div class="helper">What kind of thinking are you capturing?</div>
     <select id="type">
       <option value="decision">Decision</option>
@@ -95,7 +115,7 @@
       <option value="debt">Design debt</option>
     </select>
 
-    <div class="label">Decision note</div>
+    <div class="label"><strong>Decision note</strong></div>
     <div class="helper">Capture the why, trade-offs, or context behind this decision.</div>
     <textarea id="note" placeholder="e.g. We chose X over Y because…"></textarea>
 
