@@ -64,9 +64,15 @@ describe("UI", () => {
       expect(tagline?.textContent).toContain("Capture design decisions");
     });
 
-    it("has three tab buttons", () => {
+    it("has two tab buttons in the tab bar", () => {
       const tabs = doc.querySelectorAll(".tabs-trigger");
-      expect(tabs).toHaveLength(3);
+      expect(tabs).toHaveLength(2);
+    });
+
+    it("has a settings icon button", () => {
+      const settingsBtn = doc.getElementById("tabSettings") as HTMLElement;
+      expect(settingsBtn).toBeDefined();
+      expect(settingsBtn.classList.contains("settings-btn")).toBe(true);
     });
 
     it("Write tab is active by default", () => {
@@ -74,7 +80,7 @@ describe("UI", () => {
       expect(tabWrite?.dataset.state).toBe("active");
     });
 
-    it("View and Setup tabs are inactive by default", () => {
+    it("View and Settings are inactive by default", () => {
       const tabView = doc.getElementById("tabView") as HTMLElement;
       const tabSettings = doc.getElementById("tabSettings") as HTMLElement;
       expect(tabView?.dataset.state).toBe("inactive");
@@ -95,13 +101,33 @@ describe("UI", () => {
       expect(doc.getElementById("panelWrite")?.classList.contains("active")).toBe(false);
     });
 
-    it("switches to Setup tab", () => {
+    it("opens settings panel via icon button", () => {
       const tabSettings = doc.getElementById("tabSettings") as HTMLElement;
       tabSettings.click();
 
       expect(tabSettings.dataset.state).toBe("active");
       expect(doc.getElementById("panelSettings")?.classList.contains("active")).toBe(true);
       expect(doc.getElementById("panelWrite")?.classList.contains("active")).toBe(false);
+    });
+
+    it("toggles settings off on second click", () => {
+      const tabSettings = doc.getElementById("tabSettings") as HTMLElement;
+      tabSettings.click(); // open
+      tabSettings.click(); // close — returns to previous tab (write)
+
+      expect(tabSettings.dataset.state).toBe("inactive");
+      expect(doc.getElementById("panelSettings")?.classList.contains("active")).toBe(false);
+      expect(doc.getElementById("panelWrite")?.classList.contains("active")).toBe(true);
+    });
+
+    it("returns to View tab when toggling settings off from View", () => {
+      (doc.getElementById("tabView") as HTMLElement).click();
+      const tabSettings = doc.getElementById("tabSettings") as HTMLElement;
+      tabSettings.click(); // open settings from view
+      tabSettings.click(); // close — should return to view
+
+      expect(doc.getElementById("panelView")?.classList.contains("active")).toBe(true);
+      expect(doc.getElementById("panelSettings")?.classList.contains("active")).toBe(false);
     });
 
     it("switches back to Write tab", () => {
@@ -124,7 +150,7 @@ describe("UI", () => {
       expect(journalMsg).toBeDefined();
     });
 
-    it("sends GET_FILE_KEY when switching to Setup tab", () => {
+    it("sends GET_FILE_KEY when clicking settings button", () => {
       messages.length = 0;
       const tabSettings = doc.getElementById("tabSettings") as HTMLElement;
       tabSettings.click();
@@ -483,10 +509,34 @@ describe("UI", () => {
     });
 
     it("hides status when no file key", () => {
+      // First send a key to mark as initialized, then clear
+      simulatePluginMessage(win, { type: "FILE_KEY", fileKey: "INIT" });
       simulatePluginMessage(win, { type: "FILE_KEY", fileKey: "" });
 
       const status = doc.getElementById("setupStatus") as HTMLElement;
       expect(status?.style.display).toBe("none");
+    });
+
+    it("auto-opens settings when no file key on first launch", () => {
+      // Create a fresh UI to test first-launch behavior
+      const fresh = createUI();
+      triggerLoad(fresh.win);
+
+      // Simulate plugin responding with empty file key
+      simulatePluginMessage(fresh.win, { type: "FILE_KEY", fileKey: "" });
+
+      const panelSettings = fresh.doc.getElementById("panelSettings") as HTMLElement;
+      expect(panelSettings.classList.contains("active")).toBe(true);
+    });
+
+    it("does not auto-open settings when file key exists", () => {
+      const fresh = createUI();
+      triggerLoad(fresh.win);
+
+      simulatePluginMessage(fresh.win, { type: "FILE_KEY", fileKey: "KEY123" });
+
+      const panelSettings = fresh.doc.getElementById("panelSettings") as HTMLElement;
+      expect(panelSettings.classList.contains("active")).toBe(false);
     });
 
     it("sends SET_FILE_KEY with extracted key from URL", () => {
@@ -531,6 +581,102 @@ describe("UI", () => {
   });
 
   // -----------------------------------------------------------------------
+  // RESIZE on tab switch
+  // -----------------------------------------------------------------------
+  describe("RESIZE on tab switch", () => {
+    it("sends RESIZE when switching to View tab", () => {
+      messages.length = 0;
+      (doc.getElementById("tabView") as HTMLElement).click();
+
+      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
+      expect(resizeMsg).toBeDefined();
+    });
+
+    it("sends RESIZE when switching to Setup tab", () => {
+      messages.length = 0;
+      (doc.getElementById("tabSettings") as HTMLElement).click();
+
+      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
+      expect(resizeMsg).toBeDefined();
+    });
+
+    it("sends RESIZE when switching back to Write tab", () => {
+      (doc.getElementById("tabView") as HTMLElement).click();
+      messages.length = 0;
+      (doc.getElementById("tabWrite") as HTMLElement).click();
+
+      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
+      expect(resizeMsg).toBeDefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Error clear on successful action
+  // -----------------------------------------------------------------------
+  describe("Error clear on actions", () => {
+    it("clears error when save is clicked", () => {
+      // Set an error first
+      simulatePluginMessage(win, { type: "ERROR", message: "Some error" });
+      expect((doc.getElementById("error") as HTMLElement).textContent).toBe("Some error");
+
+      // Click save (should clear the error via setError(""))
+      const note = doc.getElementById("note") as HTMLTextAreaElement;
+      note.value = "A note";
+      (doc.getElementById("save") as HTMLElement).click();
+
+      const error = doc.getElementById("error") as HTMLElement;
+      expect(error.textContent).toBe("");
+    });
+
+    it("clears error when export is clicked", () => {
+      simulatePluginMessage(win, { type: "ERROR", message: "Some error" });
+
+      (doc.getElementById("export") as HTMLElement).click();
+
+      const error = doc.getElementById("error") as HTMLElement;
+      expect(error.textContent).toBe("");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // GO_TO_ENTRY from view
+  // -----------------------------------------------------------------------
+  describe("Go to entry", () => {
+    it("sends GO_TO_ENTRY when clicking a linked entry", () => {
+      simulatePluginMessage(win, {
+        type: "JOURNAL",
+        entries: [
+          { id: "1", createdAt: "2025-01-01", type: "decision", note: "Test", nodeId: "10:20", pageName: "Page", nodeName: "Frame" },
+        ],
+      });
+
+      messages.length = 0;
+      const item = doc.querySelector(".item.clickable") as HTMLElement;
+      item.click();
+
+      const goMsg = messages.find((m) => m.type === "GO_TO_ENTRY");
+      expect(goMsg).toBeDefined();
+      expect(goMsg.nodeId).toBe("10:20");
+    });
+
+    it("does not send GO_TO_ENTRY for unlinked entry", () => {
+      simulatePluginMessage(win, {
+        type: "JOURNAL",
+        entries: [
+          { id: "1", createdAt: "2025-01-01", type: "decision", note: "No link" },
+        ],
+      });
+
+      messages.length = 0;
+      const item = doc.querySelector(".item") as HTMLElement;
+      item.click();
+
+      const goMsg = messages.find((m) => m.type === "GO_TO_ENTRY");
+      expect(goMsg).toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // Initialization
   // -----------------------------------------------------------------------
   describe("Initialization", () => {
@@ -542,6 +688,11 @@ describe("UI", () => {
     it("sends GET_JOURNAL on load", () => {
       const journalMsg = messages.find((m) => m?.type === "GET_JOURNAL");
       expect(journalMsg).toBeDefined();
+    });
+
+    it("sends GET_FILE_KEY on load", () => {
+      const keyMsg = messages.find((m) => m?.type === "GET_FILE_KEY");
+      expect(keyMsg).toBeDefined();
     });
   });
 });
