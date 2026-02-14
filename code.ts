@@ -10,7 +10,9 @@ import {
   generateEntryId,
 } from "./logic";
 
-figma.notify("Jot v2.0.0 ready");
+// ---------------------------------------------------------------------------
+// UI helpers (require figma.ui to be active)
+// ---------------------------------------------------------------------------
 
 const post = (msg: object) => figma.ui.postMessage(msg);
 const err = (message: string) => post({ type: "ERROR", message });
@@ -19,23 +21,23 @@ const err = (message: string) => post({ type: "ERROR", message });
 // Storage helpers
 // ---------------------------------------------------------------------------
 
-function getJournal(): JournalEntry[] {
+export function getJournal(): JournalEntry[] {
   return parseJournal(figma.root.getPluginData(STORAGE_KEY));
 }
 
-function setJournal(entries: JournalEntry[]) {
+export function setJournal(entries: JournalEntry[]) {
   figma.root.setPluginData(STORAGE_KEY, JSON.stringify(entries));
 }
 
-function fileKey(): string | undefined {
+export function fileKey(): string | undefined {
   return figma.root.getPluginData(FILE_KEY_STORAGE) || undefined;
 }
 
-function sendFileKey() {
+export function sendFileKey() {
   post({ type: "FILE_KEY", fileKey: fileKey() || "" });
 }
 
-function sendJournal(entries: JournalEntry[]) {
+export function sendJournal(entries: JournalEntry[]) {
   post({ type: "JOURNAL", entries });
 }
 
@@ -43,7 +45,7 @@ function sendJournal(entries: JournalEntry[]) {
 // Figma-specific helpers
 // ---------------------------------------------------------------------------
 
-function selectionContext() {
+export function selectionContext() {
   const node = figma.currentPage.selection[0];
   const nodeId = node?.id;
   return {
@@ -55,13 +57,13 @@ function selectionContext() {
   };
 }
 
-function getPageForNode(node: BaseNode): PageNode | null {
+export function getPageForNode(node: BaseNode): PageNode | null {
   let current: BaseNode | null = node;
   while (current && current.type !== "PAGE") current = current.parent;
   return current as PageNode | null;
 }
 
-function isSceneNode(node: BaseNode): node is SceneNode {
+export function isSceneNode(node: BaseNode): node is SceneNode {
   return (node as any).x !== undefined;
 }
 
@@ -69,27 +71,27 @@ function isSceneNode(node: BaseNode): node is SceneNode {
 // Message handlers
 // ---------------------------------------------------------------------------
 
-function handleGetJournal() {
+export function handleGetJournal() {
   sendJournal(getJournal());
 }
 
-function handleGetFileKey() {
+export function handleGetFileKey() {
   sendFileKey();
 }
 
-function handleSetFileKey(msg: { fileKey: string }) {
+export function handleSetFileKey(msg: { fileKey: string }) {
   figma.root.setPluginData(FILE_KEY_STORAGE, msg.fileKey);
   figma.notify("File key saved");
   post({ type: "FILE_KEY", fileKey: msg.fileKey });
 }
 
-function handleResize(msg: { width: number; height: number }) {
+export function handleResize(msg: { width: number; height: number }) {
   figma.ui.resize(msg.width, msg.height);
 }
 
-function handleAddEntry(msg: { entryType: string; note: unknown }) {
+export function handleAddEntry(msg: { entryType: string; note: unknown }): JournalEntry | null {
   const note = cleanNote(msg.note);
-  if (!note) { err("Write a note first."); return; }
+  if (!note) { err("Write a note first."); return null; }
 
   const entry: JournalEntry = {
     id: generateEntryId(),
@@ -103,9 +105,10 @@ function handleAddEntry(msg: { entryType: string; note: unknown }) {
   setJournal(next);
   sendJournal(next);
   figma.notify("Saved to Jot");
+  return entry;
 }
 
-function handleUpdateEntry(msg: { id: string; entryType: string; note: unknown }) {
+export function handleUpdateEntry(msg: { id: string; entryType: string; note: unknown }) {
   const note = cleanNote(msg.note);
   if (!note) { err("Write a note first."); return; }
 
@@ -125,14 +128,14 @@ function handleUpdateEntry(msg: { id: string; entryType: string; note: unknown }
   figma.notify("Updated entry");
 }
 
-function handleDeleteEntry(msg: { id: string }) {
+export function handleDeleteEntry(msg: { id: string }) {
   const next = getJournal().filter((e) => e.id !== msg.id);
   setJournal(next);
   sendJournal(next);
   figma.notify("Deleted entry");
 }
 
-function handleGoToEntry(msg: { nodeId?: string }) {
+export function handleGoToEntry(msg: { nodeId?: string }) {
   if (!msg.nodeId) return;
 
   const node = figma.getNodeById(msg.nodeId);
@@ -150,7 +153,7 @@ function handleGoToEntry(msg: { nodeId?: string }) {
   }
 }
 
-function handleExportMd() {
+export function handleExportMd() {
   post({ type: "EXPORT_MD_RESULT", markdown: toMarkdown(getJournal(), fileKey()) });
 }
 
@@ -158,7 +161,7 @@ function handleExportMd() {
 // Message router
 // ---------------------------------------------------------------------------
 
-const handlers: Record<string, (msg: any) => void> = {
+export const handlers: Record<string, (msg: any) => void> = {
   GET_JOURNAL: handleGetJournal,
   GET_FILE_KEY: handleGetFileKey,
   SET_FILE_KEY: handleSetFileKey,
@@ -171,13 +174,16 @@ const handlers: Record<string, (msg: any) => void> = {
 };
 
 // ---------------------------------------------------------------------------
-// Init
+// Standalone plugin init (used when run as a plugin command, not widget)
 // ---------------------------------------------------------------------------
 
-figma.showUI(__html__, { width: 360, height: 520 });
-sendFileKey();
+export function initPlugin() {
+  figma.notify("Jot v2.0.0 ready");
+  figma.showUI(__html__, { width: 360, height: 520 });
+  sendFileKey();
 
-figma.ui.onmessage = (msg) => {
-  const handler = handlers[msg.type];
-  if (handler) handler(msg);
-};
+  figma.ui.onmessage = (msg) => {
+    const handler = handlers[msg.type];
+    if (handler) handler(msg);
+  };
+}

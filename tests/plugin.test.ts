@@ -63,7 +63,8 @@ async function loadPlugin() {
   (globalThis as any).__html__ = "<html></html>";
 
   vi.resetModules();
-  await import("../code");
+  const mod = await import("../code");
+  mod.initPlugin();
 
   const handler = mock.figma.ui.onmessage;
   if (!handler) throw new Error("onmessage handler not set");
@@ -346,7 +347,7 @@ describe("Plugin message handling", () => {
   });
 
   describe("Plugin initialization", () => {
-    it("calls showUI on load", async () => {
+    it("calls showUI on initPlugin", async () => {
       const { figma } = await loadPlugin();
       expect(figma.showUI).toHaveBeenCalledWith("<html></html>", {
         width: 360,
@@ -354,7 +355,7 @@ describe("Plugin message handling", () => {
       });
     });
 
-    it("sends FILE_KEY on load", async () => {
+    it("sends FILE_KEY on initPlugin", async () => {
       const { postMessage } = await loadPlugin();
       expect(postMessage).toHaveBeenCalledWith({
         type: "FILE_KEY",
@@ -362,7 +363,7 @@ describe("Plugin message handling", () => {
       });
     });
 
-    it("notifies on load", async () => {
+    it("notifies on initPlugin", async () => {
       const { notify } = await loadPlugin();
       expect(notify).toHaveBeenCalledWith("Jot v2.0.0 ready");
     });
