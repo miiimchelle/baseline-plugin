@@ -4,12 +4,17 @@
     "lib": ["ES2017"],
     "strict": true,
 
-    "module": "commonjs",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "rootDir": ".",
     "outDir": "dist",
+
+    "jsx": "react",
+    "jsxFactory": "figma.widget.h",
+    "jsxFragmentFactory": "figma.widget.Fragment",
 
     "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
     "skipLibCheck": true
   },
-  "include": ["code.ts", "logic.ts"]
+  "include": ["widget.tsx", "logic.ts"]
 }

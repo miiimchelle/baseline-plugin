@@ -2,7 +2,7 @@
   "name": "Jot",
   "id": "jot-journal",
   "api": "1.0.0",
-  "main": "dist/code.js",
-  "ui": "ui.html",
+  "widgetApi": "1.0.0",
+  "main": "dist/widget.js",
   "editorType": ["figma"]
 }
