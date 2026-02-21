@@ -11,6 +11,7 @@
     "dev": "esbuild code.ts --bundle --outfile=dist/code.js --format=iife --target=es2017 --watch",
     "watch": "esbuild code.ts --bundle --outfile=dist/code.js --format=iife --target=es2017 --watch",
     "test": "vitest run",
+    "test:run": "vitest run",
     "test:watch": "vitest"
   },
   "author": "",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@figma/eslint-plugin-figma-plugins": "*",
     "@figma/plugin-typings": "^1.121.0",
+    "@playwright/test": "^1.58.2",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "@vitest/coverage-v8": "^4.0.18",
