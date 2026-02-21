@@ -507,6 +507,7 @@
     };
 
     // --- File key ---
+    // Kept in sync with logic.ts extractFileKey(); see tests/extractFileKey.sync.test.ts.
     function extractFileKey(input) {
       const trimmed = input.trim();
       const match = trimmed.match(/figma\.com\/(?:design|file)\/([A-Za-z0-9]+)/);
