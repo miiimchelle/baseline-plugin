@@ -94,14 +94,16 @@
       border-color: var(--color-gray-300);
     }
     .settings-btn[data-state="active"] {
-      background: var(--surface-elevated); color: var(--text-primary);
-      border-color: var(--color-gray-400);
+      background: var(--color-gray-200); color: var(--text-primary);
+      border-color: var(--color-gray-600);
+      box-shadow: 0 0 0 1px var(--color-gray-600);
     }
     .settings-btn:focus-visible {
       outline: 2px solid var(--focus-ring); outline-offset: 2px;
     }
 
     .tabs-root { margin-bottom: var(--space-6); }
+    .tabs-root.tabs-root--hidden { display: none; }
 
     .tabs-list {
       display: inline-flex; width: 100%; align-items: center; justify-content: space-between;
@@ -136,6 +138,14 @@
     }
     select:focus-visible, button:focus-visible {
       outline: 2px solid var(--focus-ring); outline-offset: 2px;
+    }
+    .btn-primary {
+      background: var(--color-gray-900); color: var(--color-white);
+      border-color: var(--color-gray-900);
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background: var(--color-gray-800); border-color: var(--color-gray-800);
     }
     textarea {
       width: 100%; height: 90px; resize: vertical; margin-top: var(--space-2);
@@ -318,8 +328,8 @@
     </button>
   </div>
 
-  <div class="tabs-root">
-    <div class="tabs-list" role="tablist" aria-label="Baseline tabs">
+  <div id="tabsRoot" class="tabs-root">
+    <div class="tabs-list" role="tablist" aria-label="Jot tabs">
       <button
         id="tabWrite"
         class="tabs-trigger"
@@ -362,7 +372,7 @@
     <div class="helper">Capture the why, trade-offs, or context behind this decision.</div>
     <textarea id="note" placeholder="e.g. We chose X over Y because…"></textarea>
 
-    <button id="save">Save entry</button>
+    <button id="save" class="btn-primary">Save entry</button>
     <button id="cancelEdit" style="display:none;">Cancel edit</button>
   </div>
 
@@ -382,7 +392,7 @@
     <div id="entryCount" class="entry-count"></div>
     <div class="list" id="list"></div>
     <div class="export-row">
-      <button id="export">Export Markdown</button>
+      <button id="export" class="btn-primary">Export Markdown</button>
       <button id="copyMd" style="display:none;">Copy to clipboard</button>
     </div>
     <textarea id="md" class="md" readonly></textarea>
@@ -394,7 +404,7 @@
       <div class="label" style="margin-top:0;">File link (for Markdown export)</div>
       <div class="helper">Paste this file's Figma URL so exported entries include clickable links to nodes.</div>
       <input id="fileUrlInput" type="text" placeholder="https://www.figma.com/design/ABC123/..." />
-      <div class="setup-row"><button id="saveFileKey">Save</button></div>
+      <div class="setup-row"><button id="saveFileKey" class="btn-primary">Save</button></div>
       <div id="setupStatus" class="setup-status"></div>
       <div class="setup-hint">Stored per file. You only need to set it once.</div>
     </div>
@@ -483,6 +493,7 @@
       const showSettings = tab === "settings";
       $("panelSettings").classList.toggle("active", showSettings);
       $("tabSettings").dataset.state = showSettings ? "active" : "inactive";
+      $("tabsRoot").classList.toggle("tabs-root--hidden", showSettings);
 
       if (tab === "view") {
         $("md").style.display = "none";
