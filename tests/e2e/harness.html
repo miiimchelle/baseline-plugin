@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Jot UI E2E Harness</title>
+</head>
+<body>
+  <iframe id="plugin-frame" src="/ui.html" style="width:360px;height:520px;border:1px solid #ccc;"></iframe>
+  <script>
+    (function() {
+      const frame = document.getElementById("plugin-frame");
+      window.__harnessOutbound = [];
+      window.__harnessReady = false;
+
+      window.addEventListener("message", function(e) {
+        if (e.source !== frame.contentWindow) return;
+        const msg = e.data && e.data.pluginMessage;
+        if (msg) window.__harnessOutbound.push(msg);
+      });
+
+      window.__harnessSend = function(msg) {
+        if (frame.contentWindow) frame.contentWindow.postMessage({ pluginMessage: msg }, "*");
+      };
+
+      frame.onload = function() {
+        window.__harnessReady = true;
+      };
+    })();
+  </script>
+</body>
+</html>

@@ -581,32 +581,24 @@ describe("UI", () => {
   });
 
   // -----------------------------------------------------------------------
-  // RESIZE on tab switch
+  // Tab switch (RESIZE is only sent when content height grows, not on every switch)
   // -----------------------------------------------------------------------
-  describe("RESIZE on tab switch", () => {
-    it("sends RESIZE when switching to View tab", () => {
-      messages.length = 0;
+  describe("Tab switch", () => {
+    it("shows View panel when switching to View tab", () => {
       (doc.getElementById("tabView") as HTMLElement).click();
-
-      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
-      expect(resizeMsg).toBeDefined();
+      expect(doc.getElementById("panelView")?.classList.contains("active")).toBe(true);
+      expect(doc.getElementById("panelWrite")?.classList.contains("active")).toBe(false);
     });
 
-    it("sends RESIZE when switching to Setup tab", () => {
-      messages.length = 0;
+    it("shows Settings panel when clicking settings", () => {
       (doc.getElementById("tabSettings") as HTMLElement).click();
-
-      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
-      expect(resizeMsg).toBeDefined();
+      expect(doc.getElementById("panelSettings")?.classList.contains("active")).toBe(true);
     });
 
-    it("sends RESIZE when switching back to Write tab", () => {
+    it("shows Write panel when switching back to Write tab", () => {
       (doc.getElementById("tabView") as HTMLElement).click();
-      messages.length = 0;
       (doc.getElementById("tabWrite") as HTMLElement).click();
-
-      const resizeMsg = messages.find((m) => m?.type === "RESIZE");
-      expect(resizeMsg).toBeDefined();
+      expect(doc.getElementById("panelWrite")?.classList.contains("active")).toBe(true);
     });
   });
 

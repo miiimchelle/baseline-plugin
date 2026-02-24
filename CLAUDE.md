@@ -25,8 +25,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
 - `npm run format:check` - Check formatting
-- `npm test` - Run tests in watch mode
-- `npm run test:run` - Run tests once
+- `npm test` - Run unit tests once
+- `npm run test:run` - Run unit tests once (alias)
+- `npm run test:watch` - Run unit tests in watch mode
+- `npm run test:e2e` - Run Playwright e2e tests
 
 ## Architecture
 
